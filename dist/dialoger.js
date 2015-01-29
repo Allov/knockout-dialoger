@@ -1,5 +1,5 @@
-define(['jquery', 'bootstrap', 'knockout', 'lodash', 'crossroads', 'hasher', 'framework-utilities', 'knockout-configurator'],
-    function($, bootstrap, ko, _, crossroads, hasher, frameworkUtilities, knockoutConfigurator) {
+define(['jquery', 'knockout', 'lodash'],
+    function($, ko, _) {
         'use strict';
 
         //var KEYCODE_ENTER = 13;
