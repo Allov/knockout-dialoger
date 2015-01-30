@@ -1,11 +1,11 @@
-define(['jquery', 'knockout', 'lodash'],
-    function($, ko, _) {
+define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
+    function($, ko, _, koUtilities) {
         'use strict';
 
         //var KEYCODE_ENTER = 13;
         var KEYCODE_ESC = 27;
         
-        function Framework() {
+        function Dialoger() {
             var self = this;
 
             self.$document = $(document);
@@ -42,26 +42,25 @@ define(['jquery', 'knockout', 'lodash'],
             });
         }
 
-        Framework.prototype.init = function( /*config*/ ) {
+        //TODO: Passer $dialogElement en argument au lieu
+        Dialoger.prototype.init = function( /*config*/ ) {
             var self = this;
 
             self.$dialogElement = getDialogElement();
 
-
-
-            self.registerComponent('dialogs', {
-                basePath: 'bower_components/rc.framework.js/dist/components/'
+            koUtilities.registerComponent('dialoger', {
+                basePath: 'bower_components/rc.component.dialoger/dist/components/'
             });
         };
 
-        Framework.prototype.showDialog = function(name, params) {
+        Dialoger.prototype.showDialog = function(name, params) {
             var deferred = new $.Deferred();
             var self = this;
 
             var dialogConfigToShow = findByName(self.dialogConfigs, name);
 
             if (!dialogConfigToShow) {
-                throw new Error('Framework.showDialog - Unregistered dialog: ' + name);
+                throw new Error('Dialoger.showDialog - Unregistered dialog: ' + name);
             }
 
             var dialog = {
@@ -100,7 +99,7 @@ define(['jquery', 'knockout', 'lodash'],
             return deferred.promise();
         };
 
-        Framework.prototype.hideCurrentDialog = function() {
+        Dialoger.prototype.hideCurrentDialog = function() {
             var currentDialog = this.currentDialog();
 
             if (currentDialog) {
@@ -108,9 +107,9 @@ define(['jquery', 'knockout', 'lodash'],
             }
         };
 
-        Framework.prototype.registerDialog = function(name, dialogConfig) {
+        Dialoger.prototype.registerDialog = function(name, dialogConfig) {
             if (!dialogConfig.name) {
-                throw new Error('Framework.registerDialog - Argument missing exception: name');
+                throw new Error('Dialoger.registerDialog - Argument missing exception: name');
             }
 
             var componentConfig = buildComponentConfigFromDialogConfig(dialogConfig);
@@ -161,17 +160,17 @@ define(['jquery', 'knockout', 'lodash'],
         }
 
         function getDialogElement() {
-            var $dialogsElement = $('dialogs');
+            var $dialogerElement = $('dialoger');
 
-            if ($dialogsElement.length < 1) {
-                throw new Error('Framework.showDialog - Cannot show dialog if dialogs component is not part of the page.');
+            if ($dialogerElement.length < 1) {
+                throw new Error('Dialoger.showDialog - Cannot show dialog if dialoger component is not part of the page.');
             }
 
-            if ($dialogsElement.length > 1) {
-                throw new Error('Framework.showDialog - Cannot show dialog if more than one dialogs component is part of the page.');
+            if ($dialogerElement.length > 1) {
+                throw new Error('Dialoger.showDialog - Cannot show dialog if more than one dialoger component is part of the page.');
             }
 
-            return $dialogsElement;
+            return $dialogerElement;
         }
 
         function findByName(collection, name) {
@@ -183,5 +182,5 @@ define(['jquery', 'knockout', 'lodash'],
         }
 
 
-        return new Framework();
+        return new Dialoger();
     });
