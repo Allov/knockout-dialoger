@@ -108,11 +108,13 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
         };
 
         Dialoger.prototype.registerDialog = function(name, dialogConfig) {
-            if (!dialogConfig.name) {
+            if (!name) {
                 throw new Error('Dialoger.registerDialog - Argument missing exception: name');
             }
 
-            var componentConfig = buildComponentConfigFromDialogConfig(dialogConfig);
+        dialogConfig = dialogConfig || {};
+            dialogConfig.name = name;
+            var componentConfig = buildComponentConfigFromDialogConfig(name, dialogConfig);
             this.registerComponent(componentConfig.name, componentConfig);
 
             var finalDialogConfig = applyDialogConventions(name, dialogConfig, componentConfig);
