@@ -10,6 +10,10 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
 
             self.$document = $(document);
 
+            koUtilities.registerComponent('dialoger', {
+                isBower: true
+            });
+
             self.dialogConfigs = [];
             self.loadedDialogs = ko.observableArray([]);
 
@@ -47,10 +51,6 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
             var self = this;
 
             self.$dialogElement = getDialogElement();
-
-            koUtilities.registerComponent('dialoger', {
-                basePath: 'bower_components/rc.component.dialoger/dist/components/'
-            });
         };
 
         Dialoger.prototype.showDialog = function(name, params) {
