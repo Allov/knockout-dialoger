@@ -4,7 +4,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
 
         //var KEYCODE_ENTER = 13;
         var KEYCODE_ESC = 27;
-        
+
         function Dialoger() {
             var self = this;
 
@@ -112,10 +112,10 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
                 throw new Error('Dialoger.registerDialog - Argument missing exception: name');
             }
 
-        dialogConfig = dialogConfig || {};
+            dialogConfig = dialogConfig || {};
             dialogConfig.name = name;
             var componentConfig = buildComponentConfigFromDialogConfig(name, dialogConfig);
-            this.registerComponent(componentConfig.name, componentConfig);
+            koUtilities.registerComponent(componentConfig.name, componentConfig);
 
             var finalDialogConfig = applyDialogConventions(name, dialogConfig, componentConfig);
 
