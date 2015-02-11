@@ -16,7 +16,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'configs'],
                 basePath = configs.koDialoger.basePath;
             }
 
-            koUtilities.registerComponent('knockout-dialoger', {
+            koUtilities.registerComponent('dialoger', {
                 basePath: basePath
             });
 
