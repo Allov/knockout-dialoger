@@ -1,6 +1,6 @@
 # Knockout Dialoger
 
-Knockout Dialoger is a knockout component used to display full screen dialogs.
+Knockout Dialoger is a knockout component used to display full screen dialogs. It is an opinionated component based on the [Koco generator](https://github.com/Allov/generator-koco).
 
 ## Table of contents
 
