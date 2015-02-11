@@ -1,5 +1,5 @@
-define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
-    function($, ko, _, koUtilities) {
+define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'configs'],
+    function($, ko, _, koUtilities, configs) {
         'use strict';
 
         //var KEYCODE_ENTER = 13;
@@ -10,8 +10,14 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
 
             self.$document = $(document);
 
+            var basePath = 'bower_components/knockout-dialoger/src';
+
+            if (configs.koDialoger && configs.koDialoger.basePath) {
+                basePath = configs.koDialoger.basePath;
+            }
+
             koUtilities.registerComponent('knockout-dialoger', {
-                isBower: true
+                basePath: basePath
             });
 
             self.dialogConfigs = [];
