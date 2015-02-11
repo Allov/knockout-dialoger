@@ -1,4 +1,4 @@
-define(['dialoger', 'text!./knockout-dialoger.html'],
+define(['dialoger', 'text!./dialoger.html'],
     function(dialoger, template) {
 
         var ViewModel = function (params, componentInfo) {
