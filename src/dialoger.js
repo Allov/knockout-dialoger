@@ -10,7 +10,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
 
             self.$document = $(document);
 
-            koUtilities.registerComponent('dialoger', {
+            koUtilities.registerComponent('knockout-dialoger', {
                 isBower: true
             });
 
