@@ -21,7 +21,7 @@ Knockout Dialoger is a knockout component used to display full screen dialogs. I
 
 ## Usage
 
-In your startup file, we need to do a number of things in order to fully initialize the router:
+In your startup file, we need to do a number of things in order to fully initialize the dialoger:
 
 ### startup.js
 
@@ -41,7 +41,7 @@ In your startup file, we need to do a number of things in order to fully initial
             });
 
             // Third: initialize the dialoger.
-            router.init();
+            dialoger.init();
         });
 
 ### index.html
@@ -141,7 +141,7 @@ When using a JavaScript UI handler, the name of this file has to be defined by y
 
 ## Using a dialog
 
-Now that you created a dialog, you may to display it and get data from it.
+Now that you created a dialog, you may want to display it and get data from it.
 
 ### Displaying a dialog
 
@@ -153,7 +153,7 @@ This function returns a `jQuery promise` and will resolve itself when the dialog
 
 ### Closing and returning data from a dialog
 
-Upon displaying a dialog, it will present itself as a fullscreen and blocking interface. The close button and any data to be transfered to the caller have to be handled by the callee.
+Upon displaying a dialog, it will present itself in fullscreen and blocking interface. The close button and any data to be transfered to the caller have to be handled by the callee.
 
 #### Returing data
 
