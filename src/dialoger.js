@@ -54,49 +54,51 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
         };
 
         Dialoger.prototype.showDialog = function(name, params) {
-            var deferred = new $.Deferred();
             var self = this;
+            return new $.Deferred(function(dfd) {
+                try {
+                    var dialogConfigToShow = findByName(self.dialogConfigs, name);
 
-            var dialogConfigToShow = findByName(self.dialogConfigs, name);
+                    if (!dialogConfigToShow) {
+                        throw new Error('Dialoger.showDialog - Unregistered dialog: ' + name);
+                    }
 
-            if (!dialogConfigToShow) {
-                throw new Error('Dialoger.showDialog - Unregistered dialog: ' + name);
-            }
+                    var dialog = {
+                        settings: {
+                            close: function(data) {
+                                self.loadedDialogs.remove(dialog);
 
-            var dialog = {
-                settings: {
-                    close: function(data) {
-                        self.loadedDialogs.remove(dialog);
+                                if (self.currentDialog()) {
+                                    self.currentDialog().visible(true);
+                                }
 
-                        if (self.currentDialog()) {
-                            self.currentDialog().visible(true);
-                        }
-
-                        //todo: attendre apres dialog removed from html...
-                        //important de le faire apres que le dialog soit enlever car
-                        //la position peut ne pas etre disponible dans le dialog
-                        //ceci dit... ca pourrait causer des problemes avec le paging...
-                        //il faudrit bloquer le paging tant que le scroll position n'a pas été rétabli
-                        self.$document.scrollTop(dialog.previousScrollPosition);
+                                //todo: attendre apres dialog removed from html...
+                                //important de le faire apres que le dialog soit enlever car
+                                //la position peut ne pas etre disponible dans le dialog
+                                //ceci dit... ca pourrait causer des problemes avec le paging...
+                                //il faudrit bloquer le paging tant que le scroll position n'a pas été rétabli
+                                self.$document.scrollTop(dialog.previousScrollPosition);
 
 
-                        deferred.resolve(data);
-                    },
-                    params: params,
-                    title: dialogConfigToShow.title
-                },
-                componentName: dialogConfigToShow.componentName,
-                visible: ko.observable(true),
-                previousScrollPosition: self.$document.scrollTop()
-            };
+                                dfd.resolve(data);
+                            },
+                            params: params,
+                            title: dialogConfigToShow.title
+                        },
+                        componentName: dialogConfigToShow.componentName,
+                        visible: ko.observable(true),
+                        previousScrollPosition: self.$document.scrollTop()
+                    };
 
-            if (self.currentDialog()) {
-                self.currentDialog().visible(false);
-            }
+                    if (self.currentDialog()) {
+                        self.currentDialog().visible(false);
+                    }
 
-            self.loadedDialogs.push(dialog);
-
-            return deferred.promise();
+                    self.loadedDialogs.push(dialog);
+                } catch (err) {
+                    dfd.reject(err);
+                }
+            }).promise();
         };
 
         Dialoger.prototype.hideCurrentDialog = function() {
