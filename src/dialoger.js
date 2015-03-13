@@ -53,7 +53,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
             self.$dialogElement = getDialogElement();
         };
 
-        Dialoger.prototype.showDialog = function(name, params) {
+        Dialoger.prototype.show = function(name, params) {
             var self = this;
             return new $.Deferred(function(dfd) {
                 try {
