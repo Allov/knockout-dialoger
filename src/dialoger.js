@@ -60,7 +60,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
                     var dialogConfigToShow = findByName(self.dialogConfigs, name);
 
                     if (!dialogConfigToShow) {
-                        throw new Error('Dialoger.showDialog - Unregistered dialog: ' + name);
+                        throw new Error('Dialoger.show - Unregistered dialog: ' + name);
                     }
 
                     var dialog = {
@@ -167,11 +167,11 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
             var $dialogerElement = $('dialoger');
 
             if ($dialogerElement.length < 1) {
-                throw new Error('Dialoger.showDialog - Cannot show dialog if dialoger component is not part of the page.');
+                throw new Error('Dialoger.show - Cannot show dialog if dialoger component is not part of the page.');
             }
 
             if ($dialogerElement.length > 1) {
-                throw new Error('Dialoger.showDialog - Cannot show dialog if more than one dialoger component is part of the page.');
+                throw new Error('Dialoger.show - Cannot show dialog if more than one dialoger component is part of the page.');
             }
 
             return $dialogerElement;
