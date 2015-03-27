@@ -1,6 +1,6 @@
 {
   "name": "knockout-dialoger",
-  "version": "0.1.2",
+  "version": "0.1.27",
   "authors": [
     "Allov & w3max"
   ],
@@ -20,7 +20,8 @@
     "lodash": "^3.0.0",
     "requirejs": "^2.1.15",
     "requirejs-text": "^2.0.13",
-    "knockout-utilities": "^0.2.0"
+    "knockout-utilities": "^0.2.0",
+    "knockout-router": "^0.2.4"
   },
   "homepage": "https://github.com/Allov/knockout-dialoger"
 }

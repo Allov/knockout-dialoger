@@ -1,5 +1,5 @@
-define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
-    function($, ko, _, koUtilities) {
+define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
+    function($, ko, _, koUtilities, router) {
         'use strict';
 
         //var KEYCODE_ENTER = 13;
@@ -51,6 +51,21 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
             var self = this;
 
             self.$dialogElement = getDialogElement();
+
+            router.navigating.subscribe(this.canNavigate, this);
+        };
+
+        Dialoger.prototype.canNavigate = function() {
+            // We assume that no links are possible in a dialog and the only navigation possible
+            // would be by the back button.
+            // So, in that case, we cancel navigation and simply close the dialog.
+            var currentDialog = this.currentDialog();
+            if (currentDialog) {
+                currentDialog.settings.close(null);
+                return false;
+            }
+
+            return true;
         };
 
         Dialoger.prototype.show = function(name, params) {
@@ -68,8 +83,9 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
                             close: function(data) {
                                 self.loadedDialogs.remove(dialog);
 
-                                if (self.currentDialog()) {
-                                    self.currentDialog().visible(true);
+                                var newDialog = self.currentDialog();
+                                if (newDialog) {
+                                    newDialog.visible(true);
                                 }
 
                                 //todo: attendre apres dialog removed from html...
@@ -78,7 +94,6 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities'],
                                 //ceci dit... ca pourrait causer des problemes avec le paging...
                                 //il faudrit bloquer le paging tant que le scroll position n'a pas été rétabli
                                 self.$document.scrollTop(dialog.previousScrollPosition);
-
 
                                 dfd.resolve(data);
                             },
