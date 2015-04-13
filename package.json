@@ -8,12 +8,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Allov/knockout-dialoger.git"
+    "url": "https://github.com/cbcrc/knockout-dialoger.git"
   },
-  "author": "Allov & w3max",
+  "author": "Frédérik Charest & Maxime Séguin",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Allov/knockout-dialoger/issues"
+    "url": "https://github.com/cbcrc/knockout-dialoger/issues"
   },
-  "homepage": "https://github.com/Allov/knockout-dialoger"
+  "homepage": "https://github.com/cbcrc/knockout-dialoger"
 }

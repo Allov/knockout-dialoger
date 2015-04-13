@@ -2,7 +2,7 @@
   "name": "knockout-dialoger",
   "version": "0.1.27",
   "authors": [
-    "Allov & w3max"
+    "Frédérik Charest & Maxime Séguin"
   ],
   "description": "Dialog manager",
   "main": "dist/dialog.js",
@@ -23,5 +23,5 @@
     "knockout-utilities": "^0.2.0",
     "knockout-router": "^0.2.5"
   },
-  "homepage": "https://github.com/Allov/knockout-dialoger"
+  "homepage": "https://github.com/cbcrc/knockout-dialoger"
 }
