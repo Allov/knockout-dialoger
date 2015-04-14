@@ -21,13 +21,14 @@ define(['knockout', 'dialoger'],
                 }
 
                 ko.applyBindingsToNode(element, {
-                    click: function(event) {
+                    click: function() {
                         dialoger.show(options.name, options.params)
                             .then(options.closed, options.failed)
                             .always(function() {
                                 element.focus();
                             });
-                    }
+                    },
+                    clickBubble: false
                 });
             }
         };
