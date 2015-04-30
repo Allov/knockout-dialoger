@@ -1,6 +1,6 @@
-# Knockout Dialoger
+# koco dialoger
 
-Knockout Dialoger is a knockout component used to display full screen dialogs. It is an opinionated component based on the [Koco generator](https://github.com/cbcrc/generator-koco).
+koco dialoger is a knockout component used to display full screen dialogs. It is an opinionated component based on the [Koco generator](https://github.com/cbcrc/generator-koco).
 
 ## Table of contents
 
@@ -18,7 +18,7 @@ Knockout Dialoger is a knockout component used to display full screen dialogs. I
 ## Installation
 
 ```bash
-bower install knockout-dialoger
+bower install koco-dialoger
 ```
 
 ## Usage

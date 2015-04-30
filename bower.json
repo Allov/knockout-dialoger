@@ -1,11 +1,10 @@
 {
-  "name": "knockout-dialoger",
-  "version": "0.1.27",
+  "name": "koco-dialoger",
+  "version": "0.2.0",
   "authors": [
     "Frédérik Charest & Maxime Séguin"
   ],
   "description": "Dialog manager",
-  "main": "dist/dialog.js",
   "license": "MIT",
   "ignore": [
     "**/.*",
@@ -23,5 +22,5 @@
     "knockout-utilities": "^0.2.0",
     "knockout-router": "^0.2.5"
   },
-  "homepage": "https://github.com/cbcrc/knockout-dialoger"
+  "homepage": "https://github.com/cbcrc/koco-dialoger"
 }
