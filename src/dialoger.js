@@ -14,7 +14,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
             self.$document = $(document);
 
             koUtilities.registerComponent('dialoger', {
-                basePath: 'bower_components/knockout-dialoger/src'
+                basePath: 'bower_components/koco-dialoger/src'
             });
 
             self.dialogConfigs = [];
