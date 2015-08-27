@@ -119,6 +119,83 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
             }).promise();
         };
 
+        Dialoger.prototype.showPage = function(url, params) {
+            var self = this;
+
+            return new $.Deferred(function(dfd) {
+                try {
+
+                    var routerPromise = new $.Deferred(function(routerDfd) {
+                        try {
+                            router._navigateInner(url, routerDfd, router.isActivating);
+                        } catch (err) {
+                            dfd.reject(err);
+                        }
+                    }).promise();
+
+                    routerPromise
+                        .then(function(context) {
+
+                            router.isActivating(false);
+
+                            var dialog = {
+                                settings: $.extend({
+                                    close: function(data) {
+                                        self.loadedDialogs.remove(dialog);
+
+                                        var newDialog = self.currentDialog();
+
+                                        if (newDialog) {
+                                            newDialog.visible(true);
+                                        }
+
+                                        //todo: attendre apres dialog removed from html...
+                                        //important de le faire apres que le dialog soit enlever car
+                                        //la position peut ne pas etre disponible dans le dialog
+                                        //ceci dit... ca pourrait causer des problemes avec le paging...
+                                        //il faudrait bloquer le paging tant que le scroll position n'a pas été rétabli
+                                        self.$document.scrollTop(dialog.previousScrollPosition);
+
+                                        router.setUrlSilently({
+                                            url: dialog.previousContext.route.url,
+                                            pageTitle: dialog.previousContext.pageTitle,
+                                            replace: true
+                                        });
+
+                                        dfd.resolve(data);
+                                    },
+                                    params: params,
+                                    title: context.pageTitle,
+                                    isDialog: true
+                                }, context),
+                                componentName: context.route.page.componentName,
+                                visible: ko.observable(true),
+                                previousScrollPosition: self.$document.scrollTop(),
+                                previousContext: getCurrentContext(self)
+                            };
+
+                            if (self.currentDialog()) {
+                                self.currentDialog().visible(false);
+                            }
+
+                            //todo: rendu à changer l'url (silently) - ne pas oublié de la rechangé dans close juste au de-dessus
+
+                            self.loadedDialogs.push(dialog);
+                            router.setUrlSilently({
+                                url: context.route.url,
+                                pageTitle: context.pageTitle,
+                                replace: true
+                            });
+                        })
+                        .fail(function(err) {
+                            dfd.reject(err);
+                        });
+                } catch (err) {
+                    dfd.reject(err);
+                }
+            }).promise();
+        };
+
         Dialoger.prototype.hideCurrentDialog = function() {
             var currentDialog = this.currentDialog();
 
@@ -141,6 +218,14 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
 
             this.dialogConfigs.push(finalDialogConfig);
         };
+
+        function getCurrentContext(self) {
+            if (self.isDialogOpen()) {
+                return self.currentDialog().settings;
+            } else {
+                return router.context();
+            }
+        }
 
         function registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen) {
 
@@ -202,7 +287,6 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
 
             return result || null;
         }
-
 
         return new Dialoger();
     });
