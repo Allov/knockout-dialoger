@@ -45,6 +45,12 @@ define(['knockout', 'dialoger'],
 
         // Third: initialize the dialoger.
         dialoger.init();
+
+        // There's one (optional) config property that can be passed to
+        // init, 'allowNavigation'. If passed as true, then if navigation
+        // is initiated all open dialogs will be closed and navigation
+        // will proceed. That would look like:
+        // dialoger.init({ allowNavigation: true });
     });
 ```
 

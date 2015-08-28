@@ -49,23 +49,37 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
             });
         }
 
-        //TODO: Passer $dialogElement en argument au lieu
-        Dialoger.prototype.init = function( /*config*/ ) {
-            var self = this;
+        var defaultConfig = {
+            allowNavigation: false
+        }
 
+        //TODO: Passer $dialogElement en argument au lieu
+        Dialoger.prototype.init = function(config) {
+            var self = this;
+            self.config = $.extend({}, defaultConfig, config);
             self.$dialogElement = getDialogElement();
 
             router.navigating.subscribe(this.canNavigate, this);
         };
 
         Dialoger.prototype.canNavigate = function() {
+            
             // We assume that no links are possible in a dialog and the only navigation possible
             // would be by the back button.
             // So, in that case, we cancel navigation and simply close the dialog.
+            var self = this;
             var currentDialog = this.currentDialog();
-            if (currentDialog) {
-                currentDialog.settings.close(null);
-                return false;
+
+            if (!_.isUndefined(self.config.allowNavigation) && self.config.allowNavigation === true) {
+                while (self.isDialogOpen()) {
+                    this.currentDialog().settings.close(null);
+                }
+                return true;
+            } else {
+                if (currentDialog) {
+                    currentDialog.settings.close(null);
+                    return false;
+                }
             }
 
             return true;
