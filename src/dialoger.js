@@ -161,9 +161,9 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
                                 }
 
                                 if (!anyPageDialogOpened(self)) {
-                                    self.routerStateBackOrFoward = router.routerState.backOrFoward;
+                                    self.routerStateBackOrForward = router.routerState.backOrForward;
 
-                                    router.routerState.backOrFoward = function(state, direction) {
+                                    router.routerState.backOrForward = function(state, direction) {
                                         if (direction === 'forward') {
                                             //todo: pas bon dans le cas que c'était un dialog pas d'url?? (a tester)
                                             return self.showPage(state.url /*todo: conserver les params sur le state*/ );
@@ -253,7 +253,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
                 //$(window).off('popstate.dialoger');
                 //router.enable();
 
-                router.routerState.backOrFoward = self.routerStateBackOrFoward;
+                router.routerState.backOrForward = self.routerStateBackOrForward;
             }
 
             //todo: attendre apres dialog removed from html...
