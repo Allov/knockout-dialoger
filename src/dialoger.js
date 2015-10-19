@@ -249,11 +249,12 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
                 previousDialog.visible(true);
             }
 
-            if (!anyPageDialogOpened(self)) {
+            if (!anyPageDialogOpened(self) && self.routerStateBackOrForward) {
                 //$(window).off('popstate.dialoger');
                 //router.enable();
 
                 router.routerState.backOrForward = self.routerStateBackOrForward;
+                self.routerStateBackOrForward = null;
             }
 
             //todo: attendre apres dialog removed from html...
