@@ -51,7 +51,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
 
         var defaultConfig = {
             allowNavigation: false
-        }
+        };
 
         //TODO: Passer $dialogElement en argument au lieu
         Dialoger.prototype.init = function(config) {
@@ -62,7 +62,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
             router.navigating.subscribe(this.canNavigate, this);
         };
 
-        Dialoger.prototype.canNavigate = function() {
+        Dialoger.prototype.canNavigate = function(options) {
             
             // We assume that no links are possible in a dialog and the only navigation possible
             // would be by the back button.
@@ -70,7 +70,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
             var self = this;
             var currentDialog = this.currentDialog();
 
-            if (!_.isUndefined(self.config.allowNavigation) && self.config.allowNavigation === true) {
+            if ((!_.isUndefined(options.replace) || options.replace === false) && !_.isUndefined(self.config.allowNavigation) && self.config.allowNavigation === true) {
                 while (self.isDialogOpen()) {
                     this.currentDialog().settings.close(null);
                 }
