@@ -70,7 +70,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
             var self = this;
             var currentDialog = this.currentDialog();
 
-            if ((!_.isUndefined(options.replace) || options.replace === false) && !_.isUndefined(self.config.allowNavigation) && self.config.allowNavigation === true) {
+            if ((_.isUndefined(options.replace) || options.replace === false) && !_.isUndefined(self.config.allowNavigation) && self.config.allowNavigation === true) {
                 while (self.isDialogOpen()) {
                     this.currentDialog().settings.close(null);
                 }
