@@ -1,8 +1,8 @@
 // Copyright (c) CBC/Radio-Canada. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
-    function($, ko, _, koUtilities, router) {
+define(['jquery', 'knockout', 'lodash', 'router'],
+    function($, ko, _, router) {
         'use strict';
 
         //var KEYCODE_ENTER = 13;
@@ -13,8 +13,8 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
 
             self.$document = $(document);
 
-            koUtilities.registerComponent('dialoger', {
-                basePath: 'bower_components/koco-dialoger/src'
+            ko.components.register('dialoger', {
+                isBower: true
             });
 
             self.dialogConfigs = [];
@@ -289,7 +289,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
             dialogConfig = dialogConfig || {};
             dialogConfig.name = name;
             var componentConfig = buildComponentConfigFromDialogConfig(name, dialogConfig);
-            koUtilities.registerComponent(componentConfig.name, componentConfig);
+            ko.components.register(componentConfig.name, componentConfig);
 
             var finalDialogConfig = applyDialogConventions(name, dialogConfig, componentConfig);
 
@@ -318,7 +318,7 @@ define(['jquery', 'knockout', 'lodash', 'knockout-utilities', 'router'],
                 }
             }
 
-            return router.context();
+            return router.viewModel();
         }
 
         function registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen) {
