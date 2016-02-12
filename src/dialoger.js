@@ -302,7 +302,7 @@ define(['jquery', 'knockout', 'lodash', 'router'],
         };
 
         function anyPageDialogOpened(self) {
-            return !!_.any(self.loadedDialogs(), function(dialog) {
+            return !!_.some(self.loadedDialogs(), function(dialog) {
                 return !!dialog.previousContext;
             });
         }
