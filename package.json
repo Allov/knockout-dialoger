@@ -11,13 +11,16 @@
   },
   "main": "src/dialoger.js",
   "dependencies": {
-    "jquery": "^2.1.3",
-    "knockout": "^3.3.0",
-    "lodash": "^4.0.1",
-    "requirejs": "^2.1.15",
-    "requirejs-text": "^2.0.13",
-    "koco-knockout-utilities": "^0.4.0",
-    "koco-router": "^0.6.0"
+    "jquery": "^2.2.4",
+    "knockout": "^3.4.0",
+    "koco": "^1.0.0",
+    "koco-knockout-utilities": "^1.1.0",
+    "lodash": "^4.13.1"
   },
-  "homepage": "https://github.com/cbcrc/koco-dialoger"
+  "homepage": "https://github.com/cbcrc/koco-dialoger",
+  "devDependencies": {
+    "babel-cli": "^6.9.0",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-preset-stage-0": "^6.5.0"
+  }
 }
