@@ -4,9 +4,9 @@ var _knockout = require('knockout');
 
 var _knockout2 = _interopRequireDefault(_knockout);
 
-var _dialoger = require('dialoger');
+var _kocoDialoger = require('koco-dialoger');
 
-var _dialoger2 = _interopRequireDefault(_dialoger);
+var _kocoDialoger2 = _interopRequireDefault(_kocoDialoger);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -31,7 +31,7 @@ _knockout2.default.bindingHandlers.dialog = {
 
         _knockout2.default.applyBindingsToNode(element, {
             click: function click() {
-                _dialoger2.default.show(options.name, options.params).then(options.closed, options.failed).always(function () {
+                _kocoDialoger2.default.show(options.name, options.params).then(options.closed, options.failed).always(function () {
                     element.focus();
                 });
             },

@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 import ko from 'knockout';
-import dialoger from 'dialoger';
+import dialoger from 'koco-dialoger';
 
 // Simple use: dialog: 'dialog-name'
 // Advanced use: dialog: { name: 'dialog-name', params: { ..params to pass to the dialog }, closed: func, failed: func }

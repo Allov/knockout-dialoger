@@ -4,7 +4,7 @@
 import $ from 'jquery';
 import ko from 'knockout';
 import _ from 'lodash';
-import router from 'router';
+import koco from 'koco';
 
 
 //var KEYCODE_ENTER = 13;
@@ -61,7 +61,7 @@ Dialoger.prototype.init = function(config) {
     self.config = $.extend({}, defaultConfig, config);
     self.$dialogElement = getDialogElement();
 
-    router.navigating.subscribe(this.canNavigate, this);
+    koco.router.navigating.subscribe(this.canNavigate, this);
 };
 
 Dialoger.prototype.canNavigate = function(options) {
@@ -132,9 +132,9 @@ Dialoger.prototype.showPage = function(url, params) {
                 })) {
                 dfd.reject('Cannot open dialog for page that is already opened by dialoger: ' + url);
             } else {
-                var routerPromise = new $.Deferred(function(routerDfd) {
+                var routerPromise = new $.Deferred(function(routerState) {
                     try {
-                        router._navigateInner(url, routerDfd);
+                        koco.router._navigateInner(url, routerState);
                     } catch (err) {
                         dfd.reject(err);
                     }
@@ -163,9 +163,9 @@ Dialoger.prototype.showPage = function(url, params) {
                         }
 
                         if (!anyPageDialogOpened(self)) {
-                            self.routerStateBackOrForward = router.routerState.backOrForward;
+                            self.routerStateBackOrForward = koco.router.routerState.backOrForward;
 
-                            router.routerState.backOrForward = function(state, direction) {
+                            koco.router.routerState.backOrForward = function(state, direction) {
                                 if (direction === 'forward') {
                                     //todo: pas bon dans le cas que c'était un dialog pas d'url?? (a tester)
                                     return self.showPage(state.url /*todo: conserver les params sur le state*/ );
@@ -177,10 +177,10 @@ Dialoger.prototype.showPage = function(url, params) {
                                         self.hideCurrentDialog();
                                     }
 
-                                    if (self.currentUrl().toLowerCase() !== router.currentUrl().toLowerCase()) {
+                                    if (self.currentUrl().toLowerCase() !== koco.router.currentUrl().toLowerCase()) {
                                         var cc = getCurrentContext(self);
 
-                                        return router.setUrlSilently({
+                                        return koco.router.setUrlSilently({
                                             url: cc.route.url,
                                             replace: false,
                                             pageTitle: cc.pageTitle
@@ -190,7 +190,7 @@ Dialoger.prototype.showPage = function(url, params) {
                                 }
                             };
 
-                            //router.disable();
+                            //koco.router.disable();
                             // $(window).on('popstate.dialoger', function(e) {
                             //     self.onPopState(e);
                             // });
@@ -198,7 +198,7 @@ Dialoger.prototype.showPage = function(url, params) {
 
                         self.loadedDialogs.push(dialog);
 
-                        router.setUrlSilently({
+                        koco.router.setUrlSilently({
                             url: context.route.url,
                             pageTitle: context.pageTitle
                         });
@@ -217,7 +217,7 @@ Dialoger.prototype.close = function(data, dialog, dfd) {
     var self = this;
 
     //if close is called directly, we simulate a back and the back will fire close again
-    if (dialog.previousContext && router.currentUrl().toLowerCase() !== dialog.previousContext.route.url.toLowerCase()) {
+    if (dialog.previousContext && koco.router.currentUrl().toLowerCase() !== dialog.previousContext.route.url.toLowerCase()) {
         self.x = {
             data: data,
             dialog: dialog,
@@ -238,7 +238,7 @@ Dialoger.prototype.closeInner = function(data, dialog, dfd) {
     //var currentContext = getCurrentContext(self);
 
     // if (!dialog.previousContext && currentContext.route.url !== window.location.href) {
-    //     router.setUrlSilently({
+    //     koco.router.setUrlSilently({
     //         url: currentContext.route.url,
     //         pageTitle: currentContext.pageTitle,
     //         replace: false
@@ -253,9 +253,9 @@ Dialoger.prototype.closeInner = function(data, dialog, dfd) {
 
     if (!anyPageDialogOpened(self) && self.routerStateBackOrForward) {
         //$(window).off('popstate.dialoger');
-        //router.enable();
+        //koco.router.enable();
 
-        router.routerState.backOrForward = self.routerStateBackOrForward;
+        koco.router.routerState.backOrForward = self.routerStateBackOrForward;
         self.routerStateBackOrForward = null;
     }
 
@@ -320,7 +320,7 @@ function getCurrentContext(self) {
         }
     }
 
-    return router.viewModel();
+    return koco.router.viewModel();
 }
 
 function registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen) {
