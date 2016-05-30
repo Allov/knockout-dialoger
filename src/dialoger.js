@@ -14,7 +14,8 @@ function Dialoger() {
     var self = this;
 
     ko.components.register('dialoger', {
-        isBower: true
+        isBower: true,
+        htmlOnly: true
     });
 
     self.dialogConfigs = [];

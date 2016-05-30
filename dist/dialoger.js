@@ -32,7 +32,8 @@ function Dialoger() {
     var self = this;
 
     _knockout2.default.components.register('dialoger', {
-        isBower: true
+        isBower: true,
+        htmlOnly: true
     });
 
     self.dialogConfigs = [];
