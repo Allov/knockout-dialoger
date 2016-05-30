@@ -320,7 +320,7 @@ function getCurrentContext(self) {
         }
     }
 
-    return koco.router.viewModel();
+    return koco.router.context();
 }
 
 function registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen) {
