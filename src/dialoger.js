@@ -1,10 +1,10 @@
 // Copyright (c) CBC/Radio-Canada. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-import $ from 'jquery';
 import ko from 'knockout';
 import _ from 'lodash';
 import koco from 'koco';
+import $ from 'jquery';
 
 
 //var KEYCODE_ENTER = 13;
@@ -12,8 +12,6 @@ var KEYCODE_ESC = 27;
 
 function Dialoger() {
     var self = this;
-
-    self.$document = $(document);
 
     ko.components.register('dialoger', {
         isBower: true
@@ -55,11 +53,13 @@ var defaultConfig = {
     allowNavigation: false
 };
 
-//TODO: Passer $dialogElement en argument au lieu
+
 Dialoger.prototype.init = function(config) {
     var self = this;
-    self.config = $.extend({}, defaultConfig, config);
-    self.$dialogElement = getDialogElement();
+    self.config = Object.assign({}, defaultConfig, config);
+
+    // TODO: Passer $dialogElement en argument au lieu?
+    /* self.dialogElement = */ getDialogElement();
 
     koco.router.navigating.subscribe(this.canNavigate, this);
 };
@@ -107,7 +107,7 @@ Dialoger.prototype.show = function(name, params) {
                 },
                 componentName: dialogConfigToShow.componentName,
                 visible: ko.observable(true),
-                previousScrollPosition: self.$document.scrollTop()
+                previousScrollPosition: $(document).scrollTop()
             };
 
             if (self.currentDialog()) {
@@ -144,7 +144,7 @@ Dialoger.prototype.showPage = function(url, params) {
                     .then(function(context) {
 
                         var dialog = {
-                            settings: $.extend({
+                            settings: Object.assign({
                                 close: function(data) {
                                     self.close(data, dialog, dfd);
                                 },
@@ -154,7 +154,7 @@ Dialoger.prototype.showPage = function(url, params) {
                             }, context),
                             componentName: context.route.page.componentName,
                             visible: ko.observable(true),
-                            previousScrollPosition: self.$document.scrollTop(),
+                            previousScrollPosition: $(document).scrollTop(),
                             previousContext: getCurrentContext(self)
                         };
 
@@ -264,7 +264,7 @@ Dialoger.prototype.closeInner = function(data, dialog, dfd) {
     //la position peut ne pas etre disponible dans le dialog
     //ceci dit... ca pourrait causer des problemes avec le paging...
     //il faudrait bloquer le paging tant que le scroll position n'a pas été rétabli
-    self.$document.scrollTop(dialog.previousScrollPosition);
+    $(document).scrollTop(dialog.previousScrollPosition);
 
     dfd.resolve(data);
 };
@@ -334,9 +334,9 @@ function registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen) {
     };
 
     if (isDialogOpen) {
-        self.$document.on('keydown', hideCurrentDialog);
+        $(document).on('keydown', hideCurrentDialog);
     } else {
-        self.$document.off('keydown', hideCurrentDialog);
+        $(document).off('keydown', hideCurrentDialog);
     }
 }
 
@@ -351,7 +351,7 @@ function buildComponentConfigFromDialogConfig(name, dialogConfig) {
 }
 
 function applyDialogConventions(name, dialogConfig, componentConfig) {
-    var finalDialogConfig = $.extend({}, dialogConfig);
+    var finalDialogConfig = Object.assign({}, dialogConfig);
 
     if (!finalDialogConfig.title) {
         finalDialogConfig.title = name;
@@ -363,17 +363,17 @@ function applyDialogConventions(name, dialogConfig, componentConfig) {
 }
 
 function getDialogElement() {
-    var $dialogerElement = $('dialoger');
+    var dialogerElements = document.getElementsByName('dialoger');
 
-    if ($dialogerElement.length < 1) {
+    if (dialogerElements.length < 1) {
         throw new Error('Dialoger.show - Cannot show dialog if dialoger component is not part of the page.');
     }
 
-    if ($dialogerElement.length > 1) {
+    if (dialogerElements.length > 1) {
         throw new Error('Dialoger.show - Cannot show dialog if more than one dialoger component is part of the page.');
     }
 
-    return $dialogerElement;
+    return dialogerElements[0];
 }
 
 function findByName(collection, name) {

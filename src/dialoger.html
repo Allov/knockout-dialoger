@@ -1,6 +1,8 @@
 <!-- Copyright (c) CBC/Radio-Canada. All rights reserved.
 Licensed under the MIT license. See LICENSE file in the project root for full license information.
  -->
-<div data-bind="foreach: dialoger.loadedDialogs">
+ <!-- ko if: $parent.dialoger -->
+<div data-bind="foreach: $parent.dialoger.loadedDialogs">
     <div data-bind="visible: visible, component: { name: componentName, params: settings }"></div>
 </div>
+<!-- /ko -->

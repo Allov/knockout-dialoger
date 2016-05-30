@@ -4,10 +4,6 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _jquery = require('jquery');
-
-var _jquery2 = _interopRequireDefault(_jquery);
-
 var _knockout = require('knockout');
 
 var _knockout2 = _interopRequireDefault(_knockout);
@@ -20,6 +16,10 @@ var _koco = require('koco');
 
 var _koco2 = _interopRequireDefault(_koco);
 
+var _jquery = require('jquery');
+
+var _jquery2 = _interopRequireDefault(_jquery);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 //var KEYCODE_ENTER = 13;
@@ -30,8 +30,6 @@ var KEYCODE_ESC = 27;
 
 function Dialoger() {
     var self = this;
-
-    self.$document = (0, _jquery2.default)(document);
 
     _knockout2.default.components.register('dialoger', {
         isBower: true
@@ -73,11 +71,12 @@ var defaultConfig = {
     allowNavigation: false
 };
 
-//TODO: Passer $dialogElement en argument au lieu
 Dialoger.prototype.init = function (config) {
     var self = this;
-    self.config = _jquery2.default.extend({}, defaultConfig, config);
-    self.$dialogElement = getDialogElement();
+    self.config = Object.assign({}, defaultConfig, config);
+
+    // TODO: Passer $dialogElement en argument au lieu?
+    /* self.dialogElement = */getDialogElement();
 
     _koco2.default.router.navigating.subscribe(this.canNavigate, this);
 };
@@ -125,7 +124,7 @@ Dialoger.prototype.show = function (name, params) {
                 },
                 componentName: dialogConfigToShow.componentName,
                 visible: _knockout2.default.observable(true),
-                previousScrollPosition: self.$document.scrollTop()
+                previousScrollPosition: (0, _jquery2.default)(document).scrollTop()
             };
 
             if (self.currentDialog()) {
@@ -161,7 +160,7 @@ Dialoger.prototype.showPage = function (url, params) {
                 routerPromise.then(function (context) {
 
                     var dialog = {
-                        settings: _jquery2.default.extend({
+                        settings: Object.assign({
                             close: function close(data) {
                                 self.close(data, dialog, dfd);
                             },
@@ -171,7 +170,7 @@ Dialoger.prototype.showPage = function (url, params) {
                         }, context),
                         componentName: context.route.page.componentName,
                         visible: _knockout2.default.observable(true),
-                        previousScrollPosition: self.$document.scrollTop(),
+                        previousScrollPosition: (0, _jquery2.default)(document).scrollTop(),
                         previousContext: getCurrentContext(self)
                     };
 
@@ -278,7 +277,7 @@ Dialoger.prototype.closeInner = function (data, dialog, dfd) {
     //la position peut ne pas etre disponible dans le dialog
     //ceci dit... ca pourrait causer des problemes avec le paging...
     //il faudrait bloquer le paging tant que le scroll position n'a pas été rétabli
-    self.$document.scrollTop(dialog.previousScrollPosition);
+    (0, _jquery2.default)(document).scrollTop(dialog.previousScrollPosition);
 
     dfd.resolve(data);
 };
@@ -348,9 +347,9 @@ function registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen) {
     };
 
     if (isDialogOpen) {
-        self.$document.on('keydown', hideCurrentDialog);
+        (0, _jquery2.default)(document).on('keydown', hideCurrentDialog);
     } else {
-        self.$document.off('keydown', hideCurrentDialog);
+        (0, _jquery2.default)(document).off('keydown', hideCurrentDialog);
     }
 }
 
@@ -365,7 +364,7 @@ function buildComponentConfigFromDialogConfig(name, dialogConfig) {
 }
 
 function applyDialogConventions(name, dialogConfig, componentConfig) {
-    var finalDialogConfig = _jquery2.default.extend({}, dialogConfig);
+    var finalDialogConfig = Object.assign({}, dialogConfig);
 
     if (!finalDialogConfig.title) {
         finalDialogConfig.title = name;
@@ -377,17 +376,17 @@ function applyDialogConventions(name, dialogConfig, componentConfig) {
 }
 
 function getDialogElement() {
-    var $dialogerElement = (0, _jquery2.default)('dialoger');
+    var dialogerElements = document.getElementsByName('dialoger');
 
-    if ($dialogerElement.length < 1) {
+    if (dialogerElements.length < 1) {
         throw new Error('Dialoger.show - Cannot show dialog if dialoger component is not part of the page.');
     }
 
-    if ($dialogerElement.length > 1) {
+    if (dialogerElements.length > 1) {
         throw new Error('Dialoger.show - Cannot show dialog if more than one dialoger component is part of the page.');
     }
 
-    return $dialogerElement;
+    return dialogerElements[0];
 }
 
 function findByName(collection, name) {
