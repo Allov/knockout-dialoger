@@ -14,7 +14,7 @@ function Dialoger() {
     var self = this;
 
     ko.components.register('dialoger', {
-        isBower: true,
+        isNpm: true,
         htmlOnly: true
     });
 
@@ -346,7 +346,7 @@ function buildComponentConfigFromDialogConfig(name, dialogConfig) {
         name: name + '-dialog',
         htmlOnly: dialogConfig.htmlOnly,
         basePath: dialogConfig.basePath,
-        isBower: dialogConfig.isBower,
+        isNpm: dialogConfig.isNpm,
         type: 'dialog'
     };
 }

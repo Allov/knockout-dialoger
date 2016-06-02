@@ -41,7 +41,7 @@
         var self = this;
 
         _knockout2.default.components.register('dialoger', {
-            isBower: true,
+            isNpm: true,
             htmlOnly: true
         });
 
@@ -368,7 +368,7 @@
             name: name + '-dialog',
             htmlOnly: dialogConfig.htmlOnly,
             basePath: dialogConfig.basePath,
-            isBower: dialogConfig.isBower,
+            isNpm: dialogConfig.isNpm,
             type: 'dialog'
         };
     }
