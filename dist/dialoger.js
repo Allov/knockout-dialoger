@@ -386,7 +386,7 @@
     }
 
     function getDialogElement() {
-        var dialogerElements = document.getElementsByName('dialoger');
+        var dialogerElements = document.getElementsByTagName('dialoger');
 
         if (dialogerElements.length < 1) {
             throw new Error('Dialoger.show - Cannot show dialog if dialoger component is not part of the page.');
