@@ -42,7 +42,7 @@
 
         _knockout2.default.components.register('dialoger', {
             isNpm: true,
-            htmlOnly: true
+            isHtmlOnly: true
         });
 
         self.dialogConfigs = [];
@@ -366,7 +366,7 @@
     function buildComponentConfigFromDialogConfig(name, dialogConfig) {
         return {
             name: name + '-dialog',
-            htmlOnly: dialogConfig.htmlOnly,
+            isHtmlOnly: dialogConfig.isHtmlOnly,
             basePath: dialogConfig.basePath,
             isNpm: dialogConfig.isNpm,
             type: 'dialog'
