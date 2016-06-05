@@ -1,411 +1,411 @@
 (function (global, factory) {
-    if (typeof define === "function" && define.amd) {
-        define(['exports', 'knockout', 'lodash', 'koco', 'jquery'], factory);
-    } else if (typeof exports !== "undefined") {
-        factory(exports, require('knockout'), require('lodash'), require('koco'), require('jquery'));
-    } else {
-        var mod = {
-            exports: {}
-        };
-        factory(mod.exports, global.knockout, global.lodash, global.koco, global.jquery);
-        global.dialoger = mod.exports;
-    }
+  if (typeof define === "function" && define.amd) {
+    define(['exports', 'knockout', 'lodash', 'koco', 'jquery'], factory);
+  } else if (typeof exports !== "undefined") {
+    factory(exports, require('knockout'), require('lodash'), require('koco'), require('jquery'));
+  } else {
+    var mod = {
+      exports: {}
+    };
+    factory(mod.exports, global.knockout, global.lodash, global.koco, global.jquery);
+    global.dialoger = mod.exports;
+  }
 })(this, function (exports, _knockout, _lodash, _koco, _jquery) {
-    'use strict';
+  'use strict';
 
-    Object.defineProperty(exports, "__esModule", {
-        value: true
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+
+  var _knockout2 = _interopRequireDefault(_knockout);
+
+  var _lodash2 = _interopRequireDefault(_lodash);
+
+  var _koco2 = _interopRequireDefault(_koco);
+
+  var _jquery2 = _interopRequireDefault(_jquery);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  //var KEYCODE_ENTER = 13;
+  // Copyright (c) CBC/Radio-Canada. All rights reserved.
+  // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+  var KEYCODE_ESC = 27;
+
+  function Dialoger() {
+    var self = this;
+
+    _knockout2.default.components.register('dialoger', {
+      isNpm: true,
+      isHtmlOnly: true
     });
 
-    var _knockout2 = _interopRequireDefault(_knockout);
+    self.dialogConfigs = [];
+    self.loadedDialogs = _knockout2.default.observableArray([]);
 
-    var _lodash2 = _interopRequireDefault(_lodash);
+    self.currentDialog = _knockout2.default.computed(function () {
+      var loadedDialogs = self.loadedDialogs();
 
-    var _koco2 = _interopRequireDefault(_koco);
+      if (loadedDialogs.length) {
+        return loadedDialogs[loadedDialogs.length - 1];
+      }
 
-    var _jquery2 = _interopRequireDefault(_jquery);
+      return null;
+    });
 
-    function _interopRequireDefault(obj) {
-        return obj && obj.__esModule ? obj : {
-            default: obj
-        };
+    self.isDialogOpen = _knockout2.default.computed(function () {
+      return !!self.currentDialog();
+    });
+
+    self.isDialogOpen.subscribe(function (isDialogOpen) {
+      registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen);
+    });
+
+    self.currentDialogTitle = _knockout2.default.computed(function () {
+      var currentDialog = self.currentDialog();
+
+      if (currentDialog) {
+        return currentDialog.title;
+      }
+
+      return '';
+    });
+  }
+
+  function anyPageDialogOpened(self) {
+    return !!_lodash2.default.some(self.loadedDialogs(), function (dialog) {
+      return !!dialog.previousContext;
+    });
+  }
+
+  function getCurrentContext(self) {
+    if (self.isDialogOpen()) {
+      var pageDialog = _lodash2.default.find(self.loadedDialogs().slice().reverse(), function (dialog) {
+        return !!dialog.previousContext;
+      });
+
+      if (pageDialog) {
+        return pageDialog.settings;
+      }
     }
 
-    //var KEYCODE_ENTER = 13;
-    // Copyright (c) CBC/Radio-Canada. All rights reserved.
-    // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+    return _koco2.default.router.context();
+  }
 
-    var KEYCODE_ESC = 27;
+  function registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen) {
 
-    function Dialoger() {
-        var self = this;
+    var hideCurrentDialog = function hideCurrentDialog(e) {
+      switch (e.keyCode) {
+        case KEYCODE_ESC:
+          self.hideCurrentDialog();
+          break;
+      }
+    };
 
-        _knockout2.default.components.register('dialoger', {
-            isNpm: true,
-            isHtmlOnly: true
-        });
+    if (isDialogOpen) {
+      (0, _jquery2.default)(document).on('keydown', hideCurrentDialog);
+    } else {
+      (0, _jquery2.default)(document).off('keydown', hideCurrentDialog);
+    }
+  }
 
-        self.dialogConfigs = [];
-        self.loadedDialogs = _knockout2.default.observableArray([]);
+  function buildComponentConfigFromDialogConfig(name, dialogConfig) {
+    return {
+      name: name + '-dialog',
+      isHtmlOnly: dialogConfig.isHtmlOnly,
+      basePath: dialogConfig.basePath,
+      isNpm: dialogConfig.isNpm,
+      type: 'dialog'
+    };
+  }
 
-        self.currentDialog = _knockout2.default.computed(function () {
-            var loadedDialogs = self.loadedDialogs();
+  function applyDialogConventions(name, dialogConfig, componentConfig) {
+    var finalDialogConfig = Object.assign({}, dialogConfig);
 
-            if (loadedDialogs.length) {
-                return loadedDialogs[loadedDialogs.length - 1];
-            }
-
-            return null;
-        });
-
-        self.isDialogOpen = _knockout2.default.computed(function () {
-            return !!self.currentDialog();
-        });
-
-        self.isDialogOpen.subscribe(function (isDialogOpen) {
-            registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen);
-        });
-
-        self.currentDialogTitle = _knockout2.default.computed(function () {
-            var currentDialog = self.currentDialog();
-
-            if (currentDialog) {
-                return currentDialog.title;
-            }
-
-            return '';
-        });
+    if (!finalDialogConfig.title) {
+      finalDialogConfig.title = name;
     }
 
-    var defaultConfig = {
-        allowNavigation: false
-    };
+    finalDialogConfig.componentName = componentConfig.name;
 
-    Dialoger.prototype.init = function (config) {
-        var self = this;
-        self.config = Object.assign({}, defaultConfig, config);
+    return finalDialogConfig;
+  }
 
-        // TODO: Passer $dialogElement en argument au lieu?
-        /* self.dialogElement = */getDialogElement();
+  function getDialogElement() {
+    var dialogerElements = document.getElementsByTagName('dialoger');
 
-        _koco2.default.router.navigating.subscribe(this.canNavigate, this);
-    };
-
-    Dialoger.prototype.canNavigate = function (options) {
-
-        // We assume that no links are possible in a dialog and the only navigation possible
-        // would be by the back button.
-        // So, in that case, we cancel navigation and simply close the dialog.
-        var self = this;
-        var currentDialog = this.currentDialog();
-
-        if ((_lodash2.default.isUndefined(options.replace) || options.replace === false) && !_lodash2.default.isUndefined(self.config.allowNavigation) && self.config.allowNavigation === true) {
-            while (self.isDialogOpen()) {
-                this.currentDialog().settings.close(null);
-            }
-            return true;
-        } else {
-            if (currentDialog) {
-                currentDialog.settings.close(null);
-                return false;
-            }
-        }
-
-        return true;
-    };
-
-    Dialoger.prototype.show = function (name, params) {
-        var self = this;
-        return new _jquery2.default.Deferred(function (dfd) {
-            try {
-                var dialogConfigToShow = findByName(self.dialogConfigs, name);
-
-                if (!dialogConfigToShow) {
-                    throw new Error('Dialoger.show - Unregistered dialog: ' + name);
-                }
-
-                var dialog = {
-                    settings: {
-                        close: function close(data) {
-                            self.close(data, dialog, dfd);
-                        },
-                        params: params,
-                        title: dialogConfigToShow.title
-                    },
-                    componentName: dialogConfigToShow.componentName,
-                    visible: _knockout2.default.observable(true),
-                    previousScrollPosition: (0, _jquery2.default)(document).scrollTop()
-                };
-
-                if (self.currentDialog()) {
-                    self.currentDialog().visible(false);
-                }
-
-                self.loadedDialogs.push(dialog);
-            } catch (err) {
-                dfd.reject(err);
-            }
-        }).promise();
-    };
-
-    Dialoger.prototype.showPage = function (url, params) {
-        var self = this;
-
-        return new _jquery2.default.Deferred(function (dfd) {
-            try {
-
-                if (_lodash2.default.find(self.loadedDialogs(), function (d) {
-                    return d.settings.route && d.settings.route.url.toLowerCase() === url.toLowerCase();
-                })) {
-                    dfd.reject('Cannot open dialog for page that is already opened by dialoger: ' + url);
-                } else {
-                    var routerPromise = new _jquery2.default.Deferred(function (routerState) {
-                        try {
-                            _koco2.default.router._navigateInner(url, routerState);
-                        } catch (err) {
-                            dfd.reject(err);
-                        }
-                    }).promise();
-
-                    routerPromise.then(function (context) {
-
-                        var dialog = {
-                            settings: Object.assign({
-                                close: function close(data) {
-                                    self.close(data, dialog, dfd);
-                                },
-                                params: params,
-                                title: context.pageTitle,
-                                isDialog: true
-                            }, context),
-                            componentName: context.route.page.componentName,
-                            visible: _knockout2.default.observable(true),
-                            previousScrollPosition: (0, _jquery2.default)(document).scrollTop(),
-                            previousContext: getCurrentContext(self)
-                        };
-
-                        if (self.currentDialog()) {
-                            self.currentDialog().visible(false);
-                        }
-
-                        if (!anyPageDialogOpened(self)) {
-                            self.routerStateBackOrForward = _koco2.default.router.routerState.backOrForward;
-
-                            _koco2.default.router.routerState.backOrForward = function (state, direction) {
-                                if (direction === 'forward') {
-                                    //todo: pas bon dans le cas que c'était un dialog pas d'url?? (a tester)
-                                    return self.showPage(state.url /*todo: conserver les params sur le state*/);
-                                } else {
-                                        if (self.x) {
-                                            self.closeInner(self.x.data, self.x.dialog, self.x.dfd);
-                                            self.x = null;
-                                        } else {
-                                            self.hideCurrentDialog();
-                                        }
-
-                                        if (self.currentUrl().toLowerCase() !== _koco2.default.router.currentUrl().toLowerCase()) {
-                                            var cc = getCurrentContext(self);
-
-                                            return _koco2.default.router.setUrlSilently({
-                                                url: cc.route.url,
-                                                replace: false,
-                                                pageTitle: cc.pageTitle
-                                            });
-                                        }
-                                    }
-                            };
-
-                            //koco.router.disable();
-                            // $(window).on('popstate.dialoger', function(e) {
-                            //     self.onPopState(e);
-                            // });
-                        }
-
-                        self.loadedDialogs.push(dialog);
-
-                        _koco2.default.router.setUrlSilently({
-                            url: context.route.url,
-                            pageTitle: context.pageTitle
-                        });
-                    }).fail(function (err) {
-                        dfd.reject(err);
-                    });
-                }
-            } catch (err) {
-                dfd.reject(err);
-            }
-        }).promise();
-    };
-
-    Dialoger.prototype.close = function (data, dialog, dfd) {
-        var self = this;
-
-        //if close is called directly, we simulate a back and the back will fire close again
-        if (dialog.previousContext && _koco2.default.router.currentUrl().toLowerCase() !== dialog.previousContext.route.url.toLowerCase()) {
-            self.x = {
-                data: data,
-                dialog: dialog,
-                dfd: dfd
-            };
-            window.history.go(-1);
-        } else {
-            self.closeInner(data, dialog, dfd);
-        }
-    };
-
-    Dialoger.prototype.closeInner = function (data, dialog, dfd) {
-        var self = this;
-
-        self.loadedDialogs.remove(dialog);
-
-        //var currentContext = getCurrentContext(self);
-
-        // if (!dialog.previousContext && currentContext.route.url !== window.location.href) {
-        //     koco.router.setUrlSilently({
-        //         url: currentContext.route.url,
-        //         pageTitle: currentContext.pageTitle,
-        //         replace: false
-        //     });
-        // }
-
-        var previousDialog = self.currentDialog();
-
-        if (previousDialog) {
-            previousDialog.visible(true);
-        }
-
-        if (!anyPageDialogOpened(self) && self.routerStateBackOrForward) {
-            //$(window).off('popstate.dialoger');
-            //koco.router.enable();
-
-            _koco2.default.router.routerState.backOrForward = self.routerStateBackOrForward;
-            self.routerStateBackOrForward = null;
-        }
-
-        //todo: attendre apres dialog removed from html...
-        //important de le faire apres que le dialog soit enlever car
-        //la position peut ne pas etre disponible dans le dialog
-        //ceci dit... ca pourrait causer des problemes avec le paging...
-        //il faudrait bloquer le paging tant que le scroll position n'a pas été rétabli
-        (0, _jquery2.default)(document).scrollTop(dialog.previousScrollPosition);
-
-        dfd.resolve(data);
-    };
-
-    // Dialoger.prototype.onPopState = function() {
-    //     var self = this;
-
-    //     self.hideCurrentDialog();
-    // };
-
-    Dialoger.prototype.hideCurrentDialog = function () {
-        var currentDialog = this.currentDialog();
-
-        if (currentDialog) {
-            currentDialog.settings.close();
-        }
-    };
-
-    Dialoger.prototype.registerDialog = function (name, dialogConfig) {
-        if (!name) {
-            throw new Error('Dialoger.registerDialog - Argument missing exception: name');
-        }
-
-        dialogConfig = dialogConfig || {};
-        dialogConfig.name = name;
-        var componentConfig = buildComponentConfigFromDialogConfig(name, dialogConfig);
-        _knockout2.default.components.register(componentConfig.name, componentConfig);
-
-        var finalDialogConfig = applyDialogConventions(name, dialogConfig, componentConfig);
-
-        this.dialogConfigs.push(finalDialogConfig);
-    };
-
-    Dialoger.prototype.currentUrl = function () {
-        var self = this;
-        return getCurrentContext(self).route.url;
-    };
-
-    function anyPageDialogOpened(self) {
-        return !!_lodash2.default.some(self.loadedDialogs(), function (dialog) {
-            return !!dialog.previousContext;
-        });
+    if (dialogerElements.length < 1) {
+      throw new Error('Dialoger.show - Cannot show dialog if dialoger component is not part of the page.');
     }
 
-    function getCurrentContext(self) {
-        if (self.isDialogOpen()) {
-            var pageDialog = _lodash2.default.find(self.loadedDialogs().slice().reverse(), function (dialog) {
-                return !!dialog.previousContext;
-            });
-
-            if (pageDialog) {
-                return pageDialog.settings;
-            }
-        }
-
-        return _koco2.default.router.context();
+    if (dialogerElements.length > 1) {
+      throw new Error('Dialoger.show - Cannot show dialog if more than one dialoger component is part of the page.');
     }
 
-    function registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen) {
+    return dialogerElements[0];
+  }
 
-        var hideCurrentDialog = function hideCurrentDialog(e) {
-            switch (e.keyCode) {
-                case KEYCODE_ESC:
-                    self.hideCurrentDialog();
-                    break;
-            }
-        };
+  function findByName(collection, name) {
+    var result = _lodash2.default.find(collection, function (obj) {
+      return obj.name === name;
+    });
 
-        if (isDialogOpen) {
-            (0, _jquery2.default)(document).on('keydown', hideCurrentDialog);
-        } else {
-            (0, _jquery2.default)(document).off('keydown', hideCurrentDialog);
-        }
+    return result || null;
+  }
+
+  var defaultConfig = {
+    allowNavigation: false
+  };
+
+  Dialoger.prototype.init = function (config) {
+    var self = this;
+    self.config = Object.assign({}, defaultConfig, config);
+
+    // TODO: Passer $dialogElement en argument au lieu?
+    /* self.dialogElement = */
+    getDialogElement();
+
+    _koco2.default.router.navigating.subscribe(this.canNavigate, this);
+  };
+
+  Dialoger.prototype.canNavigate = function (options) {
+
+    // We assume that no links are possible in a dialog and the only navigation possible
+    // would be by the back button.
+    // So, in that case, we cancel navigation and simply close the dialog.
+    var self = this;
+    var currentDialog = this.currentDialog();
+
+    if ((_lodash2.default.isUndefined(options.replace) || options.replace === false) && !_lodash2.default.isUndefined(self.config.allowNavigation) && self.config.allowNavigation === true) {
+      while (self.isDialogOpen()) {
+        this.currentDialog().settings.close(null);
+      }
+      return true;
+    } else {
+      if (currentDialog) {
+        currentDialog.settings.close(null);
+        return false;
+      }
     }
 
-    function buildComponentConfigFromDialogConfig(name, dialogConfig) {
-        return {
-            name: name + '-dialog',
-            isHtmlOnly: dialogConfig.isHtmlOnly,
-            basePath: dialogConfig.basePath,
-            isNpm: dialogConfig.isNpm,
-            type: 'dialog'
-        };
+    return true;
+  };
+
+  Dialoger.prototype.show = function (name, params) {
+    var self = this;
+
+    return Promise(function (resolve) {
+      var dialogConfigToShow = findByName(self.dialogConfigs, name);
+
+      if (!dialogConfigToShow) {
+        throw new Error('Dialoger.show - Unregistered dialog: ' + name);
+      }
+
+      var dialog = {
+        settings: {
+          close: function close(data) {
+            self.close(data, dialog, resolve);
+          },
+          params: params,
+          title: dialogConfigToShow.title
+        },
+        componentName: dialogConfigToShow.componentName,
+        visible: _knockout2.default.observable(true),
+        previousScrollPosition: (0, _jquery2.default)(document).scrollTop()
+      };
+
+      if (self.currentDialog()) {
+        self.currentDialog().visible(false);
+      }
+
+      self.loadedDialogs.push(dialog);
+    });
+  };
+
+  // Dialoger.prototype.showPage = function(url, params) {
+  //   var self = this;
+
+  //   return new Promise((resolve, reject) => {
+  //       if (_.find(self.loadedDialogs(), function(d) {
+  //           return d.settings.route && d.settings.route.url.toLowerCase() === url.toLowerCase();
+  //         })) {
+  //         reject('Cannot open dialog for page that is already opened by dialoger: ' + url);
+  //       } else {
+
+  //         //RENDU ICI WTF (pourquoi on passait un dfd *routerState* au router)
+  //         //est-ce que showPage est vraiment utilisé ou on pourrait remettre ça à plus tard?
+
+  //         var routerPromise = new $.Deferred(function(routerState) {
+  //           try {
+  //             koco.router._navigateInner(url, routerState);
+  //           } catch (err) {
+  //             reject(err);
+  //           }
+  //         }).promise();
+
+  //         routerPromise
+  //           .then(function(context) {
+
+  //             var dialog = {
+  //               settings: Object.assign({
+  //                 close: function(data) {
+  //                   self.close(data, dialog, resolve);
+  //                 },
+  //                 params: params,
+  //                 title: context.pageTitle,
+  //                 isDialog: true
+  //               }, context),
+  //               componentName: context.route.page.componentName,
+  //               visible: ko.observable(true),
+  //               previousScrollPosition: $(document).scrollTop(),
+  //               previousContext: getCurrentContext(self)
+  //             };
+
+  //             if (self.currentDialog()) {
+  //               self.currentDialog().visible(false);
+  //             }
+
+  //             if (!anyPageDialogOpened(self)) {
+  //               self.routerStateBackOrForward = koco.router.routerState.backOrForward;
+
+  //               koco.router.routerState.backOrForward = function(state, direction) {
+  //                 if (direction === 'forward') {
+  //                   //todo: pas bon dans le cas que c'était un dialog pas d'url?? (a tester)
+  //                   return self.showPage(state.url /*todo: conserver les params sur le state*/ );
+  //                 } else {
+  //                   if (self.x) {
+  //                     self.closeInner(self.x.data, self.x.dialog, self.x.resolve);
+  //                     self.x = null;
+  //                   } else {
+  //                     self.hideCurrentDialog();
+  //                   }
+
+  //                   if (self.currentUrl().toLowerCase() !== koco.router.currentUrl().toLowerCase()) {
+  //                     var cc = getCurrentContext(self);
+
+  //                     return koco.router.setUrlSilently({
+  //                       url: cc.route.url,
+  //                       replace: false,
+  //                       pageTitle: cc.pageTitle
+  //                     });
+  //                   }
+
+  //                 }
+  //               };
+
+  //               //koco.router.disable();
+  //               // $(window).on('popstate.dialoger', function(e) {
+  //               //     self.onPopState(e);
+  //               // });
+  //             }
+
+  //             self.loadedDialogs.push(dialog);
+
+  //             koco.router.setUrlSilently({
+  //               url: context.route.url,
+  //               pageTitle: context.pageTitle
+  //             });
+  //           })
+  //           .fail(function(err) {
+  //             dfd.reject(err);
+  //           });
+  //       }
+  //   });
+  // };
+
+  Dialoger.prototype.close = function (data, dialog, resolve) {
+    var self = this;
+
+    //if close is called directly, we simulate a back and the back will fire close again
+    if (dialog.previousContext && _koco2.default.router.currentUrl().toLowerCase() !== dialog.previousContext.route.url.toLowerCase()) {
+      self.x = {
+        data: data,
+        dialog: dialog,
+        resolve: resolve
+      };
+      window.history.go(-1);
+    } else {
+      self.closeInner(data, dialog, resolve);
+    }
+  };
+
+  Dialoger.prototype.closeInner = function (data, dialog, resolve) {
+    var self = this;
+
+    self.loadedDialogs.remove(dialog);
+
+    //var currentContext = getCurrentContext(self);
+
+    // if (!dialog.previousContext && currentContext.route.url !== window.location.href) {
+    //     koco.router.setUrlSilently({
+    //         url: currentContext.route.url,
+    //         pageTitle: currentContext.pageTitle,
+    //         replace: false
+    //     });
+    // }
+
+    var previousDialog = self.currentDialog();
+
+    if (previousDialog) {
+      previousDialog.visible(true);
     }
 
-    function applyDialogConventions(name, dialogConfig, componentConfig) {
-        var finalDialogConfig = Object.assign({}, dialogConfig);
+    if (!anyPageDialogOpened(self) && self.routerStateBackOrForward) {
+      //$(window).off('popstate.dialoger');
+      //koco.router.enable();
 
-        if (!finalDialogConfig.title) {
-            finalDialogConfig.title = name;
-        }
-
-        finalDialogConfig.componentName = componentConfig.name;
-
-        return finalDialogConfig;
+      _koco2.default.router.routerState.backOrForward = self.routerStateBackOrForward;
+      self.routerStateBackOrForward = null;
     }
 
-    function getDialogElement() {
-        var dialogerElements = document.getElementsByTagName('dialoger');
+    //todo: attendre apres dialog removed from html...
+    //important de le faire apres que le dialog soit enlever car
+    //la position peut ne pas etre disponible dans le dialog
+    //ceci dit... ca pourrait causer des problemes avec le paging...
+    //il faudrait bloquer le paging tant que le scroll position n'a pas été rétabli
+    (0, _jquery2.default)(document).scrollTop(dialog.previousScrollPosition);
 
-        if (dialogerElements.length < 1) {
-            throw new Error('Dialoger.show - Cannot show dialog if dialoger component is not part of the page.');
-        }
+    resolve(data);
+  };
 
-        if (dialogerElements.length > 1) {
-            throw new Error('Dialoger.show - Cannot show dialog if more than one dialoger component is part of the page.');
-        }
+  // Dialoger.prototype.onPopState = function() {
+  //     var self = this;
 
-        return dialogerElements[0];
+  //     self.hideCurrentDialog();
+  // };
+
+  Dialoger.prototype.hideCurrentDialog = function () {
+    var currentDialog = this.currentDialog();
+
+    if (currentDialog) {
+      currentDialog.settings.close();
+    }
+  };
+
+  Dialoger.prototype.registerDialog = function (name, dialogConfig) {
+    if (!name) {
+      throw new Error('Dialoger.registerDialog - Argument missing exception: name');
     }
 
-    function findByName(collection, name) {
-        var result = _lodash2.default.find(collection, function (obj) {
-            return obj.name === name;
-        });
+    dialogConfig = dialogConfig || {};
+    dialogConfig.name = name;
+    var componentConfig = buildComponentConfigFromDialogConfig(name, dialogConfig);
+    _knockout2.default.components.register(componentConfig.name, componentConfig);
 
-        return result || null;
-    }
+    var finalDialogConfig = applyDialogConventions(name, dialogConfig, componentConfig);
 
-    exports.default = new Dialoger();
+    this.dialogConfigs.push(finalDialogConfig);
+  };
+
+  Dialoger.prototype.currentUrl = function () {
+    var self = this;
+    return getCurrentContext(self).route.url;
+  };
+
+  exports.default = new Dialoger();
 });
