@@ -44,7 +44,7 @@
 
             _knockout2.default.applyBindingsToNode(element, {
                 click: function click() {
-                    _kocoDialoger2.default.show(options.name, options.params).then(options.closed, options.failed).always(function () {
+                    _kocoDialoger2.default.show(options.name, options.params).then(options.closed).catch(options.failed).then(function () {
                         element.focus();
                     });
                 },

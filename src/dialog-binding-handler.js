@@ -23,8 +23,9 @@ ko.bindingHandlers.dialog = {
         ko.applyBindingsToNode(element, {
             click: function() {
                 dialoger.show(options.name, options.params)
-                    .then(options.closed, options.failed)
-                    .always(function() {
+                    .then(options.closed)
+                    .catch(options.failed)
+                    .then(function() {
                         element.focus();
                     });
             },
