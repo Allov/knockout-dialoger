@@ -174,7 +174,7 @@ Dialoger.prototype.canNavigate = function(options) {
 Dialoger.prototype.show = function(name, params) {
   var self = this;
 
-  return Promise(resolve => {
+  return new Promise(resolve => {
     var dialogConfigToShow = findByName(self.dialogConfigs, name);
 
     if (!dialogConfigToShow) {
