@@ -1,8 +1,15 @@
 <!-- Copyright (c) CBC/Radio-Canada. All rights reserved.
 Licensed under the MIT license. See LICENSE file in the project root for full license information.
  -->
- <!-- ko if: $parent.dialoger && $parent.dialoger.isDialogOpen() -->
-<div data-bind="foreach: $parent.dialoger.loadedDialogs">
+<!-- ko if: $parent.dialoger && $parent.dialoger.isDialogOpen() -->
+  <!-- ko foreach: $parent.dialoger.loadedDialogs -->
+    <!-- ko ifnot: isPageDialog -->
     <div data-bind="visible: visible, component: { name: componentName, params: settings }"></div>
-</div>
+    <!-- /ko -->
+    <!-- ko if: isPageDialog -->
+      <!-- ko if: template() && visible() -->
+        <div class="page-dialog" data-bind="visible: visible, template: template"></div>
+      <!-- /ko -->
+    <!-- /ko -->
+  <!-- /ko -->
 <!-- /ko -->

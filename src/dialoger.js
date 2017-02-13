@@ -6,73 +6,15 @@ import _ from 'lodash';
 import koco from 'koco';
 import $ from 'jquery';
 
+// const KEYCODE_ENTER = 13;
+const KEYCODE_ESC = 27;
 
-//var KEYCODE_ENTER = 13;
-var KEYCODE_ESC = 27;
-
-function Dialoger() {
-  var self = this;
-
-  ko.components.register('dialoger', {
-    isNpm: true,
-    isHtmlOnly: true
-  });
-
-  self.dialogConfigs = [];
-  self.loadedDialogs = ko.observableArray([]);
-
-  self.currentDialog = ko.computed(function() {
-    var loadedDialogs = self.loadedDialogs();
-
-    if (loadedDialogs.length) {
-      return loadedDialogs[loadedDialogs.length - 1];
-    }
-
-    return null;
-  });
-
-  self.isDialogOpen = ko.computed(function() {
-    return !!self.currentDialog();
-  });
-
-  self.isDialogOpen.subscribe(function(isDialogOpen) {
-    registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen);
-  });
-
-  self.currentDialogTitle = ko.computed(function() {
-    var currentDialog = self.currentDialog();
-
-    if (currentDialog) {
-      return currentDialog.title;
-    }
-
-    return '';
-  });
-}
-
-function anyPageDialogOpened(self) {
-  return !!_.some(self.loadedDialogs(), function(dialog) {
-    return !!dialog.previousContext;
-  });
-}
-
-function getCurrentContext(self) {
-  if (self.isDialogOpen()) {
-    var pageDialog = _.find(self.loadedDialogs().slice().reverse(), function(dialog) {
-      return !!dialog.previousContext;
-    });
-
-    if (pageDialog) {
-      return pageDialog.settings;
-    }
-  }
-
-  return koco.router.context();
-}
+const DEFAULT_CONFIG = {
+  allowNavigation: false
+};
 
 function registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen) {
-
-  var hideCurrentDialog = function(e) {
+  const hideCurrentDialog = (e) => {
     switch (e.keyCode) {
       case KEYCODE_ESC:
         self.hideCurrentDialog();
@@ -89,7 +31,7 @@ function registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen) {
 
 function buildComponentConfigFromDialogConfig(name, dialogConfig) {
   return {
-    name: name + '-dialog',
+    name: `${name}-dialog`,
     isHtmlOnly: dialogConfig.isHtmlOnly,
     basePath: dialogConfig.basePath,
     isNpm: dialogConfig.isNpm,
@@ -98,7 +40,7 @@ function buildComponentConfigFromDialogConfig(name, dialogConfig) {
 }
 
 function applyDialogConventions(name, dialogConfig, componentConfig) {
-  var finalDialogConfig = Object.assign({}, dialogConfig);
+  const finalDialogConfig = Object.assign({}, dialogConfig);
 
   if (!finalDialogConfig.title) {
     finalDialogConfig.title = name;
@@ -110,7 +52,7 @@ function applyDialogConventions(name, dialogConfig, componentConfig) {
 }
 
 function getDialogElement() {
-  var dialogerElements = document.getElementsByTagName('dialoger');
+  const dialogerElements = document.getElementsByTagName('dialoger');
 
   if (dialogerElements.length < 1) {
     throw new Error('Dialoger.show - Cannot show dialog if dialoger component is not part of the page.');
@@ -124,263 +66,232 @@ function getDialogElement() {
 }
 
 function findByName(collection, name) {
-  var result = _.find(collection, function(obj) {
-    return obj.name === name;
-  });
+  const result = _.find(collection, obj => obj.name === name);
 
   return result || null;
 }
 
+class Dialog {
+  constructor(dialoger, resolve) {
+    this.dialoger = dialoger;
+    this.resolve = resolve;
+    this.visible = ko.observable(true);
+    this.previousScrollPosition = $(document).scrollTop();
+    this.isPageDialog = false;
 
-var defaultConfig = {
-  allowNavigation: false
-};
+    this.settings = {
+      close: this.close.bind(this)
+    };
+  }
 
+  close(data) {
+    this.dialoger.popDialog(this);
+    this.resolve(data);
+  }
+}
 
-Dialoger.prototype.init = function(config) {
-  var self = this;
-  self.config = Object.assign({}, defaultConfig, config);
+class RegularDialog extends Dialog {
+  constructor(dialogConfigToShow, params, dialoger, resolve) {
+    super(dialoger, resolve);
 
-  // TODO: Passer $dialogElement en argument au lieu?
-  /* self.dialogElement = */
-  getDialogElement();
+    this.settings.params = params;
+    this.settings.title = dialogConfigToShow.title;
+    this.componentName = dialogConfigToShow.componentName;
+  }
+}
 
-  koco.router.navigating.subscribe(this.canNavigate, this);
-};
+class PageDialog extends Dialog {
+  constructor(dialoger, resolve, context) {
+    super(dialoger, resolve);
 
-Dialoger.prototype.canNavigate = function(options) {
+    // hmmm... we do this so pages can know if there are displayed inside a dialog
+    // hacky.. could overwrite something
+    context.page.viewModel.isDialog = true;
 
-  // We assume that no links are possible in a dialog and the only navigation possible
-  // would be by the back button.
-  // So, in that case, we cancel navigation and simply close the dialog.
-  var self = this;
-  var currentDialog = this.currentDialog();
+    this.context = ko.observable(context);
 
-  if ((_.isUndefined(options.replace) || options.replace === false) && !_.isUndefined(self.config.allowNavigation) && self.config.allowNavigation === true) {
-    while (self.isDialogOpen()) {
-      this.currentDialog().settings.close(null);
-    }
-    return true;
-  } else {
+    this.context.subscribe((ctx) => {
+      // hmmm... we do this so pages can know if there are displayed inside a dialog
+      // hacky.. could overwrite something
+      ctx.page.viewModel.isDialog = true;
+    });
+
+    this.template = ko.pureComputed(() => {
+      const ctx = this.context();
+
+      if (ctx) {
+        return { nodes: ctx.page.template, data: ctx.page.viewModel };
+      }
+
+      return null;
+    });
+    this.isPageDialog = true;
+  }
+}
+
+class Dialoger {
+  constructor() {
+    ko.components.register('dialoger', {
+      isNpm: true,
+      isHtmlOnly: true
+    });
+
+    this.dialogConfigs = [];
+    this.loadedDialogs = ko.observableArray([]);
+
+    this.currentDialog = ko.computed(() => {
+      const loadedDialogs = this.loadedDialogs();
+
+      if (loadedDialogs.length) {
+        return loadedDialogs[loadedDialogs.length - 1];
+      }
+
+      return null;
+    });
+
+    this.isDialogOpen = ko.computed(() =>
+      !!this.currentDialog()
+    );
+
+    this.isDialogOpen.subscribe((isDialogOpen) => {
+      registerOrUnregisterHideDialogKeyboardShortcut(this, isDialogOpen);
+    });
+
+    this.currentDialogTitle = ko.computed(() => {
+      const currentDialog = this.currentDialog();
+
+      if (currentDialog) {
+        return currentDialog.title;
+      }
+
+      return '';
+    });
+  }
+
+  init(config) {
+    this.config = Object.assign({}, DEFAULT_CONFIG, config);
+
+    // TODO: Passer $dialogElement en argument au lieu?
+    /* this.dialogElement = */
+    getDialogElement();
+
+    koco.router.navigating.subscribe(this.canNavigate, this);
+  }
+
+  canNavigate(options) {
+    // We assume that no links are possible in a dialog and the only navigation possible
+    // would be by the back button.
+    // So, in that case, we cancel navigation and simply close the dialog.
+
+    const currentDialog = this.currentDialog();
+
     if (currentDialog) {
+      if (!currentDialog.template && (_.isUndefined(options.replace) || options.replace === false) &&
+        !_.isUndefined(this.config.allowNavigation) && this.config.allowNavigation === true) {
+        this.closeAllDialogs();
+        return true;
+      }
+
       currentDialog.settings.close(null);
       return false;
     }
+
+    return true;
   }
 
-  return true;
-};
+  closeAllDialogs() {
+    while (this.isDialogOpen()) {
+      this.currentDialog().settings.close(null);
+    }
+  }
 
-Dialoger.prototype.show = function(name, params) {
-  var self = this;
+  show(name, params) {
+    return new Promise((resolve, reject) => {
+      const dialogConfigToShow = findByName(this.dialogConfigs, name);
 
-  return new Promise(resolve => {
-    var dialogConfigToShow = findByName(self.dialogConfigs, name);
+      if (!dialogConfigToShow) {
+        reject(`Unregistered dialog: ${name}`);
+      } else {
+        const dialog = new RegularDialog(dialogConfigToShow, params, this, resolve);
 
-    if (!dialogConfigToShow) {
-      throw new Error('Dialoger.show - Unregistered dialog: ' + name);
+        this.pushDialog(dialog);
+      }
+    });
+  }
+
+  showPage(url /* , params */ ) {
+    return new Promise((resolve, reject) => {
+      if (this.getLoadedDialogByUrl(url)) {
+        reject(`Dialog for url "${url}" is already opened.`);
+      } else {
+        koco.router.buildNewContext(url, { force: true })
+          .then((context) => {
+            const dialog = new PageDialog(this, resolve, context);
+
+            this.pushDialog(dialog);
+
+            // must be called after the dialog is displayed!
+            koco.router.postActivate(context);
+          })
+          .catch(reject); // todo: handle 404 vs exception
+      }
+    });
+  }
+
+  pushDialog(dialog) {
+    if (this.currentDialog()) {
+      this.currentDialog().visible(false);
     }
 
-    var dialog = {
-      settings: {
-        close: function(data) {
-          self.close(data, dialog, resolve);
-        },
-        params: params,
-        title: dialogConfigToShow.title
-      },
-      componentName: dialogConfigToShow.componentName,
-      visible: ko.observable(true),
-      previousScrollPosition: $(document).scrollTop()
-    };
+    this.loadedDialogs.push(dialog);
+  }
 
-    if (self.currentDialog()) {
-      self.currentDialog().visible(false);
+  popDialog(dialog) {
+    this.loadedDialogs.remove(dialog);
+
+    const previousDialog = this.currentDialog();
+
+    if (previousDialog) {
+      previousDialog.visible(true);
     }
 
-    self.loadedDialogs.push(dialog);
-  });
-};
-
-// Dialoger.prototype.showPage = function(url, params) {
-//   var self = this;
-
-//   return new Promise((resolve, reject) => {
-//       if (_.find(self.loadedDialogs(), function(d) {
-//           return d.settings.route && d.settings.route.url.toLowerCase() === url.toLowerCase();
-//         })) {
-//         reject('Cannot open dialog for page that is already opened by dialoger: ' + url);
-//       } else {
-
-//         //RENDU ICI WTF (pourquoi on passait un dfd *routerState* au router)
-//         //est-ce que showPage est vraiment utilisé ou on pourrait remettre ça à plus tard?
-
-//         var routerPromise = new $.Deferred(function(routerState) {
-//           try {
-//             koco.router._navigateInner(url, routerState);
-//           } catch (err) {
-//             reject(err);
-//           }
-//         }).promise();
-
-//         routerPromise
-//           .then(function(context) {
-
-//             var dialog = {
-//               settings: Object.assign({
-//                 close: function(data) {
-//                   self.close(data, dialog, resolve);
-//                 },
-//                 params: params,
-//                 title: context.pageTitle,
-//                 isDialog: true
-//               }, context),
-//               componentName: context.route.page.componentName,
-//               visible: ko.observable(true),
-//               previousScrollPosition: $(document).scrollTop(),
-//               previousContext: getCurrentContext(self)
-//             };
-
-//             if (self.currentDialog()) {
-//               self.currentDialog().visible(false);
-//             }
-
-//             if (!anyPageDialogOpened(self)) {
-//               self.routerStateBackOrForward = koco.router.routerState.backOrForward;
-
-//               koco.router.routerState.backOrForward = function(state, direction) {
-//                 if (direction === 'forward') {
-//                   //todo: pas bon dans le cas que c'était un dialog pas d'url?? (a tester)
-//                   return self.showPage(state.url /*todo: conserver les params sur le state*/ );
-//                 } else {
-//                   if (self.x) {
-//                     self.closeInner(self.x.data, self.x.dialog, self.x.resolve);
-//                     self.x = null;
-//                   } else {
-//                     self.hideCurrentDialog();
-//                   }
-
-//                   if (self.currentUrl().toLowerCase() !== koco.router.currentUrl().toLowerCase()) {
-//                     var cc = getCurrentContext(self);
-
-//                     return koco.router.setUrlSilently({
-//                       url: cc.route.url,
-//                       replace: false,
-//                       pageTitle: cc.pageTitle
-//                     });
-//                   }
-
-//                 }
-//               };
-
-//               //koco.router.disable();
-//               // $(window).on('popstate.dialoger', function(e) {
-//               //     self.onPopState(e);
-//               // });
-//             }
-
-//             self.loadedDialogs.push(dialog);
-
-//             koco.router.setUrlSilently({
-//               url: context.route.url,
-//               pageTitle: context.pageTitle
-//             });
-//           })
-//           .fail(function(err) {
-//             dfd.reject(err);
-//           });
-//       }
-//   });
-// };
-
-Dialoger.prototype.close = function(data, dialog, resolve) {
-  var self = this;
-
-  //if close is called directly, we simulate a back and the back will fire close again
-  if (dialog.previousContext && koco.router.currentUrl().toLowerCase() !== dialog.previousContext.route.url.toLowerCase()) {
-    self.x = {
-      data: data,
-      dialog: dialog,
-      resolve: resolve
-    };
-    window.history.go(-1);
-  } else {
-    self.closeInner(data, dialog, resolve);
-  }
-};
-
-Dialoger.prototype.closeInner = function(data, dialog, resolve) {
-  var self = this;
-
-
-  self.loadedDialogs.remove(dialog);
-
-  //var currentContext = getCurrentContext(self);
-
-  // if (!dialog.previousContext && currentContext.route.url !== window.location.href) {
-  //     koco.router.setUrlSilently({
-  //         url: currentContext.route.url,
-  //         pageTitle: currentContext.pageTitle,
-  //         replace: false
-  //     });
-  // }
-
-  var previousDialog = self.currentDialog();
-
-  if (previousDialog) {
-    previousDialog.visible(true);
+    $(document).scrollTop(dialog.previousScrollPosition);
   }
 
-  if (!anyPageDialogOpened(self) && self.routerStateBackOrForward) {
-    //$(window).off('popstate.dialoger');
-    //koco.router.enable();
+  close(data, dialog, resolve) {
 
-    koco.router.routerState.backOrForward = self.routerStateBackOrForward;
-    self.routerStateBackOrForward = null;
+
+    resolve(data);
   }
 
-  //todo: attendre apres dialog removed from html...
-  //important de le faire apres que le dialog soit enlever car
-  //la position peut ne pas etre disponible dans le dialog
-  //ceci dit... ca pourrait causer des problemes avec le paging...
-  //il faudrait bloquer le paging tant que le scroll position n'a pas été rétabli
-  $(document).scrollTop(dialog.previousScrollPosition);
+  hideCurrentDialog() {
+    const currentDialog = this.currentDialog();
 
-  resolve(data);
-};
-
-// Dialoger.prototype.onPopState = function() {
-//     var self = this;
-
-//     self.hideCurrentDialog();
-// };
-
-Dialoger.prototype.hideCurrentDialog = function() {
-  var currentDialog = this.currentDialog();
-
-  if (currentDialog) {
-    currentDialog.settings.close();
-  }
-};
-
-Dialoger.prototype.registerDialog = function(name, dialogConfig) {
-  if (!name) {
-    throw new Error('Dialoger.registerDialog - Argument missing exception: name');
+    if (currentDialog) {
+      currentDialog.settings.close();
+    }
   }
 
-  dialogConfig = dialogConfig || {};
-  dialogConfig.name = name;
-  var componentConfig = buildComponentConfigFromDialogConfig(name, dialogConfig);
-  ko.components.register(componentConfig.name, componentConfig);
+  registerDialog(name, dialogConfig) {
+    if (!name) {
+      throw new Error('Dialoger.registerDialog - Argument missing exception: name');
+    }
 
-  var finalDialogConfig = applyDialogConventions(name, dialogConfig, componentConfig);
+    dialogConfig = dialogConfig || {};
+    dialogConfig.name = name;
+    const componentConfig = buildComponentConfigFromDialogConfig(name, dialogConfig);
+    ko.components.register(componentConfig.name, componentConfig);
 
-  this.dialogConfigs.push(finalDialogConfig);
-};
+    const finalDialogConfig = applyDialogConventions(name, dialogConfig, componentConfig);
 
-Dialoger.prototype.currentUrl = function() {
-  var self = this;
-  return getCurrentContext(self).route.url;
-};
+    this.dialogConfigs.push(finalDialogConfig);
+  }
+
+  getLoadedDialogByUrl(url) {
+    return this.loadedDialogs().find(d =>
+      d.settings.route && d.settings.route.url.toLowerCase() === url.toLowerCase()
+    );
+  }
+}
 
 export default new Dialoger();
