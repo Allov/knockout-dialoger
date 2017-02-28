@@ -1,16 +1,16 @@
 (function (global, factory) {
   if (typeof define === "function" && define.amd) {
-    define(['exports', 'knockout', 'lodash', 'koco', 'jquery'], factory);
+    define(['exports', 'knockout', 'lodash', 'koco', 'jquery', 'koco-utils', './dialoger-event'], factory);
   } else if (typeof exports !== "undefined") {
-    factory(exports, require('knockout'), require('lodash'), require('koco'), require('jquery'));
+    factory(exports, require('knockout'), require('lodash'), require('koco'), require('jquery'), require('koco-utils'), require('./dialoger-event'));
   } else {
     var mod = {
       exports: {}
     };
-    factory(mod.exports, global.knockout, global.lodash, global.koco, global.jquery);
+    factory(mod.exports, global.knockout, global.lodash, global.koco, global.jquery, global.kocoUtils, global.dialogerEvent);
     global.dialoger = mod.exports;
   }
-})(this, function (exports, _knockout, _lodash, _koco, _jquery) {
+})(this, function (exports, _knockout, _lodash, _koco, _jquery, _kocoUtils, _dialogerEvent) {
   'use strict';
 
   Object.defineProperty(exports, "__esModule", {
@@ -25,34 +25,12 @@
 
   var _jquery2 = _interopRequireDefault(_jquery);
 
+  var _dialogerEvent2 = _interopRequireDefault(_dialogerEvent);
+
   function _interopRequireDefault(obj) {
     return obj && obj.__esModule ? obj : {
       default: obj
     };
-  }
-
-  function _possibleConstructorReturn(self, call) {
-    if (!self) {
-      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-    }
-
-    return call && (typeof call === "object" || typeof call === "function") ? call : self;
-  }
-
-  function _inherits(subClass, superClass) {
-    if (typeof superClass !== "function" && superClass !== null) {
-      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
-    }
-
-    subClass.prototype = Object.create(superClass && superClass.prototype, {
-      constructor: {
-        value: subClass,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
-    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
   }
 
   function _classCallCheck(instance, Constructor) {
@@ -102,16 +80,6 @@
     }
   }
 
-  function buildComponentConfigFromDialogConfig(name, dialogConfig) {
-    return {
-      name: name + '-dialog',
-      isHtmlOnly: dialogConfig.isHtmlOnly,
-      basePath: dialogConfig.basePath,
-      isNpm: dialogConfig.isNpm,
-      type: 'dialog'
-    };
-  }
-
   function applyDialogConventions(name, dialogConfig, componentConfig) {
     var finalDialogConfig = Object.assign({}, dialogConfig);
 
@@ -147,89 +115,57 @@
   }
 
   var Dialog = function () {
-    function Dialog(dialoger, resolve) {
+    function Dialog(dialoger, context, resolve, allowNavigation) {
+      var _this = this;
+
       _classCallCheck(this, Dialog);
 
+      this.allowNavigation = _lodash2.default.isUndefined(allowNavigation) ? true : allowNavigation;
       this.dialoger = dialoger;
       this.resolve = resolve;
       this.visible = _knockout2.default.observable(true);
       this.previousScrollPosition = (0, _jquery2.default)(document).scrollTop();
       this.isPageDialog = false;
+      this.context = _knockout2.default.observable(context);
+      this.template = _knockout2.default.pureComputed(function () {
+        var ctx = _this.context();
 
-      this.settings = {
-        close: this.close.bind(this)
-      };
+        if (ctx && ctx.page) {
+          return { nodes: ctx.page.template, data: ctx.page.viewModel };
+        }
+
+        return null;
+      });
     }
 
     _createClass(Dialog, [{
       key: 'close',
       value: function close(data) {
-        this.dialoger.popDialog(this);
-        this.resolve(data);
+        var _this2 = this;
+
+        this.dialoger.navigating.canRoute().then(function (can) {
+          if (can) {
+            var context = _this2.context();
+            if (context && (0, _kocoUtils.isFunction)(context.page.viewModel.dispose)) {
+              context.page.viewModel.dispose();
+            }
+            _this2.dialoger.popDialog(_this2);
+            _this2.resolve(data);
+          }
+        });
       }
     }]);
 
     return Dialog;
   }();
 
-  var RegularDialog = function (_Dialog) {
-    _inherits(RegularDialog, _Dialog);
-
-    function RegularDialog(dialogConfigToShow, params, dialoger, resolve) {
-      _classCallCheck(this, RegularDialog);
-
-      var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(RegularDialog).call(this, dialoger, resolve));
-
-      _this.settings.params = params;
-      _this.settings.title = dialogConfigToShow.title;
-      _this.componentName = dialogConfigToShow.componentName;
-      return _this;
-    }
-
-    return RegularDialog;
-  }(Dialog);
-
-  var PageDialog = function (_Dialog2) {
-    _inherits(PageDialog, _Dialog2);
-
-    function PageDialog(dialoger, resolve, context) {
-      _classCallCheck(this, PageDialog);
-
-      var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(PageDialog).call(this, dialoger, resolve));
-
-      // hmmm... we do this so pages can know if there are displayed inside a dialog
-      // hacky.. could overwrite something
-      context.page.viewModel.isDialog = true;
-
-      _this2.context = _knockout2.default.observable(context);
-
-      _this2.context.subscribe(function (ctx) {
-        // hmmm... we do this so pages can know if there are displayed inside a dialog
-        // hacky.. could overwrite something
-        ctx.page.viewModel.isDialog = true;
-      });
-
-      _this2.template = _knockout2.default.pureComputed(function () {
-        var ctx = _this2.context();
-
-        if (ctx) {
-          return { nodes: ctx.page.template, data: ctx.page.viewModel };
-        }
-
-        return null;
-      });
-      _this2.isPageDialog = true;
-      return _this2;
-    }
-
-    return PageDialog;
-  }(Dialog);
-
   var Dialoger = function () {
     function Dialoger() {
       var _this3 = this;
 
       _classCallCheck(this, Dialoger);
+
+      this.navigating = new _dialogerEvent2.default();
 
       _knockout2.default.components.register('dialoger', {
         isNpm: true,
@@ -238,7 +174,7 @@
 
       this.dialogConfigs = [];
       this.loadedDialogs = _knockout2.default.observableArray([]);
-
+      this.isActivating = _knockout2.default.observable(false);
       this.currentDialog = _knockout2.default.computed(function () {
         var loadedDialogs = _this3.loadedDialogs();
 
@@ -275,26 +211,27 @@
 
         // TODO: Passer $dialogElement en argument au lieu?
         /* this.dialogElement = */
-        getDialogElement();
+        this.element = getDialogElement();
 
         _koco2.default.router.navigating.subscribe(this.canNavigate, this);
       }
     }, {
       key: 'canNavigate',
       value: function canNavigate(options) {
-        // We assume that no links are possible in a dialog and the only navigation possible
-        // would be by the back button.
-        // So, in that case, we cancel navigation and simply close the dialog.
-
         var currentDialog = this.currentDialog();
 
         if (currentDialog) {
-          if (!currentDialog.template && (_lodash2.default.isUndefined(options.replace) || options.replace === false) && !_lodash2.default.isUndefined(this.config.allowNavigation) && this.config.allowNavigation === true) {
-            this.closeAllDialogs();
-            return true;
+          if (currentDialog.allowNavigation === true) {
+            if ((_lodash2.default.isUndefined(options.replace) || options.replace === false) && !_lodash2.default.isUndefined(this.config.allowNavigation) && this.config.allowNavigation === true) {
+              this.closeAllDialogs();
+              return true;
+            }
+
+            currentDialog.close(null);
+            return false;
           }
 
-          currentDialog.settings.close(null);
+          currentDialog.close(null);
           return false;
         }
 
@@ -304,12 +241,12 @@
       key: 'closeAllDialogs',
       value: function closeAllDialogs() {
         while (this.isDialogOpen()) {
-          this.currentDialog().settings.close(null);
+          this.currentDialog().close(null);
         }
       }
     }, {
       key: 'show',
-      value: function show(name, params) {
+      value: function show(name, params, allowNavigation) {
         var _this4 = this;
 
         return new Promise(function (resolve, reject) {
@@ -318,29 +255,50 @@
           if (!dialogConfigToShow) {
             reject('Unregistered dialog: ' + name);
           } else {
-            var dialog = new RegularDialog(dialogConfigToShow, params, _this4, resolve);
+            (function () {
+              var dialog = new Dialog(_this4, null, resolve, allowNavigation);
+              (0, _kocoUtils.activate)(dialogConfigToShow, _this4.element, {
+                params: params,
+                title: dialogConfigToShow.title,
+                close: dialog.close.bind(dialog)
+              } /* on laisse le dialog afficher son propre loader dans le cas des dialog qui ne sont pas des pages, this.isActivating */).then(function (ativationResult) {
+                dialog.context({ page: ativationResult });
 
-            _this4.pushDialog(dialog);
+                _this4.pushDialog(dialog);
+
+                (0, _kocoUtils.postActivate)(dialogConfigToShow, ativationResult.viewModel);
+              });
+            })();
           }
         });
       }
     }, {
       key: 'showPage',
-      value: function showPage(url /* , params */) {
+      value: function showPage(url, allowNavigation) {
         var _this5 = this;
 
         return new Promise(function (resolve, reject) {
           if (_this5.getLoadedDialogByUrl(url)) {
             reject('Dialog for url "' + url + '" is already opened.');
           } else {
-            _koco2.default.router.buildNewContext(url, { force: true }).then(function (context) {
-              var dialog = new PageDialog(_this5, resolve, context);
+            _koco2.default.router.getMatchedRoute(url, { force: true }).then(function (route) {
+              if (route) {
+                return (0, _kocoUtils.activate)(route.page, _this5.element, { route: route, isDialog: true }, _this5.isActivating).then(function (page) {
+                  return {
+                    route: route,
+                    page: page
+                  };
+                });
+              }
+              return Promise.reject('404 for dialog with url: ' + url);
+            }).then(function (context) {
+              var dialog = new Dialog(_this5, context, resolve, allowNavigation);
 
               _this5.pushDialog(dialog);
 
               // must be called after the dialog is displayed!
-              _koco2.default.router.postActivate(context);
-            }).catch(reject); // todo: handle 404 vs exception
+              (0, _kocoUtils.postActivate)(context.route.page, context.page.viewModel);
+            }).catch(reject);
           }
         });
       }
@@ -367,18 +325,12 @@
         (0, _jquery2.default)(document).scrollTop(dialog.previousScrollPosition);
       }
     }, {
-      key: 'close',
-      value: function close(data, dialog, resolve) {
-
-        resolve(data);
-      }
-    }, {
       key: 'hideCurrentDialog',
       value: function hideCurrentDialog() {
         var currentDialog = this.currentDialog();
 
         if (currentDialog) {
-          currentDialog.settings.close();
+          currentDialog.close();
         }
       }
     }, {
@@ -390,8 +342,13 @@
 
         dialogConfig = dialogConfig || {};
         dialogConfig.name = name;
-        var componentConfig = buildComponentConfigFromDialogConfig(name, dialogConfig);
-        _knockout2.default.components.register(componentConfig.name, componentConfig);
+        var componentConfig = {
+          name: name + '-dialog',
+          isHtmlOnly: dialogConfig.isHtmlOnly,
+          basePath: dialogConfig.basePath,
+          isNpm: dialogConfig.isNpm,
+          type: 'dialog'
+        };
 
         var finalDialogConfig = applyDialogConventions(name, dialogConfig, componentConfig);
 

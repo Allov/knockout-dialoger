@@ -5,6 +5,8 @@ import ko from 'knockout';
 import _ from 'lodash';
 import koco from 'koco';
 import $ from 'jquery';
+import { activate, postActivate, isFunction } from 'koco-utils';
+import DialogerEvent from './dialoger-event';
 
 // const KEYCODE_ENTER = 13;
 const KEYCODE_ESC = 27;
@@ -27,16 +29,6 @@ function registerOrUnregisterHideDialogKeyboardShortcut(self, isDialogOpen) {
   } else {
     $(document).off('keydown', hideCurrentDialog);
   }
-}
-
-function buildComponentConfigFromDialogConfig(name, dialogConfig) {
-  return {
-    name: `${name}-dialog`,
-    isHtmlOnly: dialogConfig.isHtmlOnly,
-    basePath: dialogConfig.basePath,
-    isNpm: dialogConfig.isNpm,
-    type: 'dialog'
-  };
 }
 
 function applyDialogConventions(name, dialogConfig, componentConfig) {
@@ -72,65 +64,44 @@ function findByName(collection, name) {
 }
 
 class Dialog {
-  constructor(dialoger, resolve) {
+  constructor(dialoger, context, resolve, allowNavigation) {
+    this.allowNavigation = _.isUndefined(allowNavigation) ? true : allowNavigation;
     this.dialoger = dialoger;
     this.resolve = resolve;
     this.visible = ko.observable(true);
     this.previousScrollPosition = $(document).scrollTop();
     this.isPageDialog = false;
-
-    this.settings = {
-      close: this.close.bind(this)
-    };
-  }
-
-  close(data) {
-    this.dialoger.popDialog(this);
-    this.resolve(data);
-  }
-}
-
-class RegularDialog extends Dialog {
-  constructor(dialogConfigToShow, params, dialoger, resolve) {
-    super(dialoger, resolve);
-
-    this.settings.params = params;
-    this.settings.title = dialogConfigToShow.title;
-    this.componentName = dialogConfigToShow.componentName;
-  }
-}
-
-class PageDialog extends Dialog {
-  constructor(dialoger, resolve, context) {
-    super(dialoger, resolve);
-
-    // hmmm... we do this so pages can know if there are displayed inside a dialog
-    // hacky.. could overwrite something
-    context.page.viewModel.isDialog = true;
-
     this.context = ko.observable(context);
-
-    this.context.subscribe((ctx) => {
-      // hmmm... we do this so pages can know if there are displayed inside a dialog
-      // hacky.. could overwrite something
-      ctx.page.viewModel.isDialog = true;
-    });
-
     this.template = ko.pureComputed(() => {
       const ctx = this.context();
 
-      if (ctx) {
+      if (ctx && ctx.page) {
         return { nodes: ctx.page.template, data: ctx.page.viewModel };
       }
 
       return null;
     });
-    this.isPageDialog = true;
+  }
+
+  close(data) {
+    this.dialoger.navigating.canRoute()
+      .then((can) => {
+        if (can) {
+          const context = this.context();
+          if (context && isFunction(context.page.viewModel.dispose)) {
+            context.page.viewModel.dispose();
+          }
+          this.dialoger.popDialog(this);
+          this.resolve(data);
+        }
+      });
   }
 }
 
 class Dialoger {
   constructor() {
+    this.navigating = new DialogerEvent();
+
     ko.components.register('dialoger', {
       isNpm: true,
       isHtmlOnly: true
@@ -138,7 +109,7 @@ class Dialoger {
 
     this.dialogConfigs = [];
     this.loadedDialogs = ko.observableArray([]);
-
+    this.isActivating = ko.observable(false);
     this.currentDialog = ko.computed(() => {
       const loadedDialogs = this.loadedDialogs();
 
@@ -173,26 +144,27 @@ class Dialoger {
 
     // TODO: Passer $dialogElement en argument au lieu?
     /* this.dialogElement = */
-    getDialogElement();
+    this.element = getDialogElement();
 
     koco.router.navigating.subscribe(this.canNavigate, this);
   }
 
   canNavigate(options) {
-    // We assume that no links are possible in a dialog and the only navigation possible
-    // would be by the back button.
-    // So, in that case, we cancel navigation and simply close the dialog.
-
     const currentDialog = this.currentDialog();
 
     if (currentDialog) {
-      if (!currentDialog.template && (_.isUndefined(options.replace) || options.replace === false) &&
-        !_.isUndefined(this.config.allowNavigation) && this.config.allowNavigation === true) {
-        this.closeAllDialogs();
-        return true;
+      if (currentDialog.allowNavigation === true) {
+        if ((_.isUndefined(options.replace) || options.replace === false) &&
+          !_.isUndefined(this.config.allowNavigation) && this.config.allowNavigation === true) {
+          this.closeAllDialogs();
+          return true;
+        }
+
+        currentDialog.close(null);
+        return false;
       }
 
-      currentDialog.settings.close(null);
+      currentDialog.close(null);
       return false;
     }
 
@@ -201,39 +173,59 @@ class Dialoger {
 
   closeAllDialogs() {
     while (this.isDialogOpen()) {
-      this.currentDialog().settings.close(null);
+      this.currentDialog().close(null);
     }
   }
 
-  show(name, params) {
+  show(name, params, allowNavigation) {
     return new Promise((resolve, reject) => {
       const dialogConfigToShow = findByName(this.dialogConfigs, name);
 
       if (!dialogConfigToShow) {
         reject(`Unregistered dialog: ${name}`);
       } else {
-        const dialog = new RegularDialog(dialogConfigToShow, params, this, resolve);
+        const dialog = new Dialog(this, null, resolve, allowNavigation);
+        activate(dialogConfigToShow, this.element, {
+            params: params,
+            title: dialogConfigToShow.title,
+            close: dialog.close.bind(dialog)
+          } /* on laisse le dialog afficher son propre loader dans le cas des dialog qui ne sont pas des pages, this.isActivating */ )
+          .then((ativationResult) => {
+            dialog.context({ page: ativationResult });
 
-        this.pushDialog(dialog);
+            this.pushDialog(dialog);
+
+            postActivate(dialogConfigToShow, ativationResult.viewModel);
+          });
       }
     });
   }
 
-  showPage(url /* , params */ ) {
+  showPage(url, allowNavigation) {
     return new Promise((resolve, reject) => {
       if (this.getLoadedDialogByUrl(url)) {
         reject(`Dialog for url "${url}" is already opened.`);
       } else {
-        koco.router.buildNewContext(url, { force: true })
+        koco.router.getMatchedRoute(url, { force: true })
+          .then((route) => {
+            if (route) {
+              return activate(route.page, this.element, { route: route, isDialog: true }, this.isActivating)
+                .then(page => ({
+                  route: route,
+                  page: page
+                }));
+            }
+            return Promise.reject(`404 for dialog with url: ${url}`);
+          })
           .then((context) => {
-            const dialog = new PageDialog(this, resolve, context);
+            const dialog = new Dialog(this, context, resolve, allowNavigation);
 
             this.pushDialog(dialog);
 
             // must be called after the dialog is displayed!
-            koco.router.postActivate(context);
+            postActivate(context.route.page, context.page.viewModel);
           })
-          .catch(reject); // todo: handle 404 vs exception
+          .catch(reject);
       }
     });
   }
@@ -258,17 +250,11 @@ class Dialoger {
     $(document).scrollTop(dialog.previousScrollPosition);
   }
 
-  close(data, dialog, resolve) {
-
-
-    resolve(data);
-  }
-
   hideCurrentDialog() {
     const currentDialog = this.currentDialog();
 
     if (currentDialog) {
-      currentDialog.settings.close();
+      currentDialog.close();
     }
   }
 
@@ -279,8 +265,13 @@ class Dialoger {
 
     dialogConfig = dialogConfig || {};
     dialogConfig.name = name;
-    const componentConfig = buildComponentConfigFromDialogConfig(name, dialogConfig);
-    ko.components.register(componentConfig.name, componentConfig);
+    const componentConfig = {
+      name: `${name}-dialog`,
+      isHtmlOnly: dialogConfig.isHtmlOnly,
+      basePath: dialogConfig.basePath,
+      isNpm: dialogConfig.isNpm,
+      type: 'dialog'
+    };
 
     const finalDialogConfig = applyDialogConventions(name, dialogConfig, componentConfig);
 

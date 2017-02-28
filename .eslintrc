@@ -24,7 +24,8 @@
     // voir docs/known issues.txt
     "import/no-unresolved": 0,
     "import/no-extraneous-dependencies": 0,
-    "import/extensions": 0
+    "import/extensions": 0,
+    "object-shorthand": 0
   }
   // voir docs/known issues.txt
   // ,
