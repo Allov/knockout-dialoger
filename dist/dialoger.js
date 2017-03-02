@@ -115,7 +115,7 @@
   }
 
   var Dialog = function () {
-    function Dialog(dialoger, context, resolve, allowNavigation) {
+    function Dialog(dialoger, context, resolve, allowNavigation, isPageDialog) {
       var _this = this;
 
       _classCallCheck(this, Dialog);
@@ -125,7 +125,7 @@
       this.resolve = resolve;
       this.visible = _knockout2.default.observable(true);
       this.previousScrollPosition = (0, _jquery2.default)(document).scrollTop();
-      this.isPageDialog = false;
+      this.isPageDialog = isPageDialog;
       this.context = _knockout2.default.observable(context);
       this.template = _knockout2.default.pureComputed(function () {
         var ctx = _this.context();
@@ -256,7 +256,7 @@
             reject('Unregistered dialog: ' + name);
           } else {
             (function () {
-              var dialog = new Dialog(_this4, null, resolve, allowNavigation);
+              var dialog = new Dialog(_this4, null, resolve, allowNavigation, false);
               (0, _kocoUtils.activate)(dialogConfigToShow, _this4.element, {
                 params: params,
                 title: dialogConfigToShow.title,
@@ -292,7 +292,7 @@
               }
               return Promise.reject('404 for dialog with url: ' + url);
             }).then(function (context) {
-              var dialog = new Dialog(_this5, context, resolve, allowNavigation);
+              var dialog = new Dialog(_this5, context, resolve, allowNavigation, true);
 
               _this5.pushDialog(dialog);
 

@@ -64,13 +64,13 @@ function findByName(collection, name) {
 }
 
 class Dialog {
-  constructor(dialoger, context, resolve, allowNavigation) {
+  constructor(dialoger, context, resolve, allowNavigation, isPageDialog) {
     this.allowNavigation = _.isUndefined(allowNavigation) ? true : allowNavigation;
     this.dialoger = dialoger;
     this.resolve = resolve;
     this.visible = ko.observable(true);
     this.previousScrollPosition = $(document).scrollTop();
-    this.isPageDialog = false;
+    this.isPageDialog = isPageDialog;
     this.context = ko.observable(context);
     this.template = ko.pureComputed(() => {
       const ctx = this.context();
@@ -184,7 +184,7 @@ class Dialoger {
       if (!dialogConfigToShow) {
         reject(`Unregistered dialog: ${name}`);
       } else {
-        const dialog = new Dialog(this, null, resolve, allowNavigation);
+        const dialog = new Dialog(this, null, resolve, allowNavigation, false);
         activate(dialogConfigToShow, this.element, {
             params: params,
             title: dialogConfigToShow.title,
@@ -218,7 +218,7 @@ class Dialoger {
             return Promise.reject(`404 for dialog with url: ${url}`);
           })
           .then((context) => {
-            const dialog = new Dialog(this, context, resolve, allowNavigation);
+            const dialog = new Dialog(this, context, resolve, allowNavigation, true);
 
             this.pushDialog(dialog);
 
