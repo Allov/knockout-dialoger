@@ -1,16 +1,16 @@
 (function (global, factory) {
   if (typeof define === "function" && define.amd) {
-    define(['exports', 'knockout', 'lodash', 'koco', 'jquery', 'koco-utils', './dialoger-event'], factory);
+    define(['exports', 'knockout', 'lodash', 'koco', 'jquery', 'koco-utils'], factory);
   } else if (typeof exports !== "undefined") {
-    factory(exports, require('knockout'), require('lodash'), require('koco'), require('jquery'), require('koco-utils'), require('./dialoger-event'));
+    factory(exports, require('knockout'), require('lodash'), require('koco'), require('jquery'), require('koco-utils'));
   } else {
     var mod = {
       exports: {}
     };
-    factory(mod.exports, global.knockout, global.lodash, global.koco, global.jquery, global.kocoUtils, global.dialogerEvent);
+    factory(mod.exports, global.knockout, global.lodash, global.koco, global.jquery, global.kocoUtils);
     global.dialoger = mod.exports;
   }
-})(this, function (exports, _knockout, _lodash, _koco, _jquery, _kocoUtils, _dialogerEvent) {
+})(this, function (exports, _knockout, _lodash, _koco, _jquery, _kocoUtils) {
   'use strict';
 
   Object.defineProperty(exports, "__esModule", {
@@ -24,8 +24,6 @@
   var _koco2 = _interopRequireDefault(_koco);
 
   var _jquery2 = _interopRequireDefault(_jquery);
-
-  var _dialogerEvent2 = _interopRequireDefault(_dialogerEvent);
 
   function _interopRequireDefault(obj) {
     return obj && obj.__esModule ? obj : {
@@ -114,6 +112,19 @@
     return result || null;
   }
 
+  function canClose(context) {
+    return new Promise(function (resolve) {
+      if (!context || !(0, _kocoUtils.isFunction)(context.page.viewModel.canClose)) {
+        resolve(true);
+      } else {
+        var canClosePromise = context.page.viewModel.canClose.call(context.page.viewModel);
+        Promise.all([canClosePromise]).then(function (results) {
+          resolve(results[0]);
+        });
+      }
+    });
+  }
+
   var Dialog = function () {
     function Dialog(dialoger, context, resolve, allowNavigation, isPageDialog) {
       var _this = this;
@@ -143,11 +154,13 @@
       value: function close(data) {
         var _this2 = this;
 
-        this.dialoger.navigating.canRoute().then(function (can) {
+        var context = this.context();
+
+        canClose(context).then(function (can) {
           if (can) {
-            var context = _this2.context();
-            if (context && (0, _kocoUtils.isFunction)(context.page.viewModel.dispose)) {
-              context.page.viewModel.dispose();
+            var _context = _this2.context();
+            if (_context && (0, _kocoUtils.isFunction)(_context.page.viewModel.dispose)) {
+              _context.page.viewModel.dispose();
             }
             _this2.dialoger.popDialog(_this2);
             _this2.resolve(data);
@@ -164,8 +177,6 @@
       var _this3 = this;
 
       _classCallCheck(this, Dialoger);
-
-      this.navigating = new _dialogerEvent2.default();
 
       _knockout2.default.components.register('dialoger', {
         isNpm: true,

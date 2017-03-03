@@ -6,7 +6,6 @@ import _ from 'lodash';
 import koco from 'koco';
 import $ from 'jquery';
 import { activate, postActivate, isFunction } from 'koco-utils';
-import DialogerEvent from './dialoger-event';
 
 // const KEYCODE_ENTER = 13;
 const KEYCODE_ESC = 27;
@@ -63,6 +62,20 @@ function findByName(collection, name) {
   return result || null;
 }
 
+function canClose(context) {
+  return new Promise((resolve) => {
+    if (!context || !isFunction(context.page.viewModel.canClose)) {
+      resolve(true);
+    } else {
+      const canClosePromise = context.page.viewModel.canClose.call(context.page.viewModel);
+      Promise.all([canClosePromise])
+        .then((results) => {
+          resolve(results[0]);
+        });
+    }
+  });
+}
+
 class Dialog {
   constructor(dialoger, context, resolve, allowNavigation, isPageDialog) {
     this.allowNavigation = _.isUndefined(allowNavigation) ? true : allowNavigation;
@@ -84,7 +97,9 @@ class Dialog {
   }
 
   close(data) {
-    this.dialoger.navigating.canRoute()
+    const context = this.context();
+
+    canClose(context)
       .then((can) => {
         if (can) {
           const context = this.context();
@@ -100,8 +115,6 @@ class Dialog {
 
 class Dialoger {
   constructor() {
-    this.navigating = new DialogerEvent();
-
     ko.components.register('dialoger', {
       isNpm: true,
       isHtmlOnly: true
