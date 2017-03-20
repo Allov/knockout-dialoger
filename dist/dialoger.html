@@ -1,8 +1,6 @@
 <!-- Copyright (c) CBC/Radio-Canada. All rights reserved.
 Licensed under the MIT license. See LICENSE file in the project root for full license information.
  -->
-<!-- ko if: $parent.dialoger && $parent.dialoger.isDialogOpen() -->
-  <!-- ko foreach: $parent.dialoger.loadedDialogs -->
-    <div data-bind="visible: visible, template: template"></div>
-  <!-- /ko -->
+<!-- ko foreach: $parent.dialoger.loadedDialogs -->
+<div data-bind="visible: visible, template: template"></div>
 <!-- /ko -->
