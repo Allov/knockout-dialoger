@@ -99,7 +99,7 @@ class Dialog {
   close(data) {
     const context = this.context();
 
-    canClose(context)
+    return canClose(context)
       .then((can) => {
         if (can) {
           const context = this.context();
@@ -185,8 +185,8 @@ class Dialoger {
   }
 
   closeAllDialogs() {
-    while (this.isDialogOpen()) {
-      this.currentDialog().close(null);
+    if (this.isDialogOpen()) {
+      this.currentDialog().close(null).then(() => this.closeAllDialogs());
     }
   }
 
