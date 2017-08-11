@@ -156,7 +156,7 @@
 
         var context = this.context();
 
-        canClose(context).then(function (can) {
+        return canClose(context).then(function (can) {
           if (can) {
             var _context = _this2.context();
             if (_context && (0, _kocoUtils.isFunction)(_context.page.viewModel.dispose)) {
@@ -251,50 +251,51 @@
     }, {
       key: 'closeAllDialogs',
       value: function closeAllDialogs() {
-        while (this.isDialogOpen()) {
-          this.currentDialog().close(null);
+        var _this4 = this;
+
+        if (this.isDialogOpen()) {
+          this.currentDialog().close(null).then(function () {
+            return _this4.closeAllDialogs();
+          });
         }
       }
     }, {
       key: 'show',
       value: function show(name, params, allowNavigation) {
-        var _this4 = this;
+        var _this5 = this;
 
         return new Promise(function (resolve, reject) {
-          var dialogConfigToShow = findByName(_this4.dialogConfigs, name);
+          var dialogConfigToShow = findByName(_this5.dialogConfigs, name);
 
           if (!dialogConfigToShow) {
             reject('Unregistered dialog: ' + name);
           } else {
-            (function () {
-              var dialog = new Dialog(_this4, null, resolve, allowNavigation, false);
-              (0, _kocoUtils.activate)(dialogConfigToShow, _this4.element, {
-                params: params,
-                title: dialogConfigToShow.title,
-                close: dialog.close.bind(dialog)
-              } /* on laisse le dialog afficher son propre loader dans le cas des dialog qui ne sont pas des pages, this.isActivating */).then(function (ativationResult) {
-                dialog.context({ page: ativationResult });
+            var dialog = new Dialog(_this5, null, resolve, allowNavigation, false);
+            (0, _kocoUtils.activate)(dialogConfigToShow, _this5.element, {
+              params: params,
+              title: dialogConfigToShow.title,
+              close: dialog.close.bind(dialog) /* on laisse le dialog afficher son propre loader dans le cas des dialog qui ne sont pas des pages, this.isActivating */ }).then(function (ativationResult) {
+              dialog.context({ page: ativationResult });
 
-                _this4.pushDialog(dialog);
+              _this5.pushDialog(dialog);
 
-                (0, _kocoUtils.postActivate)(dialogConfigToShow, ativationResult.viewModel);
-              });
-            })();
+              (0, _kocoUtils.postActivate)(dialogConfigToShow, ativationResult.viewModel);
+            });
           }
         });
       }
     }, {
       key: 'showPage',
       value: function showPage(url, allowNavigation) {
-        var _this5 = this;
+        var _this6 = this;
 
         return new Promise(function (resolve, reject) {
-          if (_this5.getLoadedDialogByUrl(url)) {
+          if (_this6.getLoadedDialogByUrl(url)) {
             reject('Dialog for url "' + url + '" is already opened.');
           } else {
             _koco2.default.router.getMatchedRoute(url, { force: true }).then(function (route) {
               if (route) {
-                return (0, _kocoUtils.activate)(route.page, _this5.element, { route: route, isDialog: true }, _this5.isActivating).then(function (page) {
+                return (0, _kocoUtils.activate)(route.page, _this6.element, { route: route, isDialog: true }, _this6.isActivating).then(function (page) {
                   return {
                     route: route,
                     page: page
@@ -303,9 +304,9 @@
               }
               return Promise.reject('404 for dialog with url: ' + url);
             }).then(function (context) {
-              var dialog = new Dialog(_this5, context, resolve, allowNavigation, true);
+              var dialog = new Dialog(_this6, context, resolve, allowNavigation, true);
 
-              _this5.pushDialog(dialog);
+              _this6.pushDialog(dialog);
 
               // must be called after the dialog is displayed!
               (0, _kocoUtils.postActivate)(context.route.page, context.page.viewModel);
@@ -369,7 +370,7 @@
       key: 'getLoadedDialogByUrl',
       value: function getLoadedDialogByUrl(url) {
         return this.loadedDialogs().find(function (d) {
-          return d.settings.route && d.settings.route.url.toLowerCase() === url.toLowerCase();
+          return d.context && d.context.route && d.context.route.url.toLowerCase() === url.toLowerCase();
         });
       }
     }]);

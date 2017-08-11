@@ -293,7 +293,7 @@ class Dialoger {
 
   getLoadedDialogByUrl(url) {
     return this.loadedDialogs().find(d =>
-      d.settings.route && d.settings.route.url.toLowerCase() === url.toLowerCase()
+      d.context && d.context.route && d.context.route.url.toLowerCase() === url.toLowerCase()
     );
   }
 }
